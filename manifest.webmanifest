@@ -1,0 +1,16 @@
+{
+  "name": "L Gym Plan",
+  "short_name": "L Gym Plan",
+  "description": "A gentle, flexible exercise plan and logger.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f5f1",
+  "theme_color": "#0e4f5c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

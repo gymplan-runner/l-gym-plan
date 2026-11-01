@@ -1,0 +1,721 @@
+{
+ "meta": {
+  "title": "Gentle Strength & Swim Plan",
+  "version": "1.0",
+  "weeks": 12,
+  "purpose": "Build sustainable strength, core stability, general fitness and confidence while working with variable pain and fatigue.",
+  "principles": [
+   "Consistency over intensity",
+   "Recovery over performance",
+   "Flexible scheduling",
+   "Gradual progression",
+   "Respect your body's limits on the day",
+   "Rest is a valid activity"
+  ],
+  "disclaimer": "This app is a personal exercise log, not medical advice. Check with your GP or physio before starting or changing exercise, and ask a gym instructor to check machine setup."
+ },
+ "schedule": {
+  "days": {
+   "mon": {
+    "activity": "gym_a",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "tue": {
+    "activity": "swim",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "wed": {
+    "activity": "recovery",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "thu": {
+    "activity": "gym_b",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "fri": {
+    "activity": "swim",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "sat": {
+    "activity": "walk",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
+   "sun": {
+    "activity": "swim",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   }
+  },
+  "rules": [
+   "This is a flexible target, not a weekly quota.",
+   "Add recovery days whenever you need them.",
+   "Missed sessions are not made up.",
+   "Reduce or rearrange activity if sessions feel too close together.",
+   "Don't increase swim time and gym resistance in the same period."
+  ],
+  "targets": {
+   "gym_per_week": 2,
+   "swims_per_week": 3
+  }
+ },
+ "activities": {
+  "gym_a": {
+   "kind": "gym",
+   "name": "Gym: Session A",
+   "focus": "Glutes and core",
+   "max_minutes": 45,
+   "intensity": "Light",
+   "start": "1 set of 8 reps per exercise",
+   "items": [
+    {
+     "exercise": "warm_up",
+     "minutes": "5-7",
+     "amber_minutes": "3-5",
+     "amber": true,
+     "note": "Comfortable pace"
+    },
+    {
+     "exercise": "glute_bridge",
+     "sets": 1,
+     "reps": 8,
+     "amber": true,
+     "note": "Controlled movement"
+    },
+    {
+     "exercise": "hip_abductor",
+     "sets": 1,
+     "reps": 8,
+     "amber": false,
+     "note": "Light resistance",
+     "setting": true
+    },
+    {
+     "exercise": "leg_press",
+     "sets": 1,
+     "reps": 8,
+     "amber": false,
+     "note": "Comfortable range of movement",
+     "setting": true
+    },
+    {
+     "exercise": "abdominal_bracing",
+     "sets": 1,
+     "reps": "5-8",
+     "amber": true,
+     "note": "Gentle core engagement"
+    },
+    {
+     "exercise": "heel_slides",
+     "sets": 1,
+     "reps": 8,
+     "amber": true,
+     "note": "Slow, controlled movement"
+    },
+    {
+     "exercise": "cool_down",
+     "minutes": "3-5",
+     "amber_minutes": "3-5",
+     "amber": true,
+     "note": "No forced stretching"
+    }
+   ]
+  },
+  "gym_b": {
+   "kind": "gym",
+   "name": "Gym: Session B",
+   "focus": "Legs, stability and upper body",
+   "max_minutes": 45,
+   "intensity": "Light",
+   "start": "1 set of 8 reps per exercise",
+   "items": [
+    {
+     "exercise": "warm_up",
+     "minutes": "5-7",
+     "amber_minutes": "3-5",
+     "amber": true,
+     "note": "Comfortable pace"
+    },
+    {
+     "exercise": "hamstring_curl",
+     "sets": 1,
+     "reps": 8,
+     "amber": true,
+     "note": "Light resistance",
+     "setting": true
+    },
+    {
+     "exercise": "calf_raise",
+     "sets": 1,
+     "reps": 8,
+     "amber": true,
+     "note": "Controlled movement"
+    },
+    {
+     "exercise": "hip_abductor",
+     "sets": 1,
+     "reps": 8,
+     "amber": false,
+     "note": "Light resistance",
+     "setting": true
+    },
+    {
+     "exercise": "seated_row",
+     "sets": 1,
+     "reps": 8,
+     "optional": true,
+     "amber": false,
+     "note": "Only if your shoulders tolerate it",
+     "setting": true
+    },
+    {
+     "exercise": "bicep_curl",
+     "sets": 1,
+     "reps": 8,
+     "optional": true,
+     "amber": false,
+     "note": "Optional, only if your wrists tolerate it",
+     "setting": true
+    },
+    {
+     "exercise": "abdominal_bracing",
+     "sets": 1,
+     "reps": "5-8",
+     "amber": true,
+     "note": "Gentle core engagement"
+    },
+    {
+     "exercise": "heel_slides",
+     "sets": 1,
+     "reps": 8,
+     "amber": false,
+     "note": "Slow, controlled movement"
+    },
+    {
+     "exercise": "cool_down",
+     "minutes": "3-5",
+     "amber_minutes": "3-5",
+     "amber": true,
+     "note": "No forced stretching"
+    }
+   ]
+  },
+  "swim": {
+   "kind": "swim",
+   "name": "Swim",
+   "focus": "Easy, low-impact movement",
+   "minutes": "15-20",
+   "amber_minutes": "8-10",
+   "exercise": "swim"
+  },
+  "walk": {
+   "kind": "walk",
+   "name": "Woodland walk",
+   "focus": "Gentle, optional",
+   "optional": true,
+   "exercise": "walk"
+  },
+  "recovery": {
+   "kind": "recovery",
+   "name": "Recovery",
+   "focus": "Rest or gentle movement"
+  }
+ },
+ "exercises": {
+  "warm_up": {
+   "name": "Gentle warm-up",
+   "category": "warm_up",
+   "equipment": [
+    "Treadmill",
+    "Exercise bike"
+   ],
+   "what": "Gets your body warm and moving before the main exercises.",
+   "steps": [
+    "Choose the treadmill (walking) or the exercise bike, whichever feels better today.",
+    "Start slowly and settle into a comfortable pace.",
+    "You should be able to chat easily the whole time."
+   ],
+   "tips": [
+    "Warmer, not tired, is the aim."
+   ],
+   "modifications": [
+    "Shorten it if you feel tired before you start."
+   ],
+   "safety": [
+    "Hold the treadmill rails to get on and off.",
+    "On the bike, set the seat so your knee stays slightly bent."
+   ]
+  },
+  "glute_bridge": {
+   "name": "Glute bridge",
+   "category": "glutes",
+   "equipment": [
+    "Mat"
+   ],
+   "what": "Strengthens your bottom (glutes) and the back of your legs, which supports your hips and lower back.",
+   "steps": [
+    "Lie on your back on the mat, knees bent, feet flat and hip-width apart.",
+    "Gently tighten your tummy and squeeze your bottom.",
+    "Lift your hips a little way off the mat, only as high as feels comfortable.",
+    "Pause for a moment, then lower slowly."
+   ],
+   "tips": [
+    "A small lift is fine. Control matters more than height.",
+    "Breathe out as you lift."
+   ],
+   "modifications": [
+    "Make the lift smaller.",
+    "Put a folded towel under your head if your neck feels tense."
+   ],
+   "contraindications": [
+    "Skip it if lying on your back aggravates your neck or back today."
+   ],
+   "safety": [
+    "Stop if you feel sharp pain in your back or hips."
+   ]
+  },
+  "hip_abductor": {
+   "name": "Hip abductor (machine)",
+   "category": "glutes",
+   "equipment": [
+    "Hip abductor machine"
+   ],
+   "what": "Strengthens the outer hips and glutes, which help keep your hips and knees steady when you walk.",
+   "steps": [
+    "Choose the lightest weight to start. Ask an instructor to help set up the machine.",
+    "Sit back with the pads against the outside of your knees.",
+    "Slowly press your knees outwards as far as is comfortable.",
+    "Bring them back together slowly, under control."
+   ],
+   "tips": [
+    "Slow and smooth both ways.",
+    "A small range is fine."
+   ],
+   "modifications": [
+    "Reduce the range.",
+    "Lower the weight."
+   ],
+   "safety": [
+    "Stop if you feel pinching in the hips."
+   ]
+  },
+  "leg_press": {
+   "name": "Leg press (machine)",
+   "category": "legs",
+   "equipment": [
+    "Leg press machine"
+   ],
+   "what": "Strengthens your thighs and glutes for everyday things like stairs and getting up from a chair.",
+   "steps": [
+    "Start with a light weight. Ask an instructor to check the seat position.",
+    "Sit back with your feet flat on the plate, hip-width apart.",
+    "Push the plate away slowly until your legs are almost straight. Don't lock your knees.",
+    "Let the plate come back slowly, only as far as feels comfortable."
+   ],
+   "tips": [
+    "Keep your back against the seat.",
+    "Breathe out as you push."
+   ],
+   "modifications": [
+    "Use a shorter range of movement.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if it aggravates your knees today."
+   ],
+   "safety": [
+    "Never lock your knees straight."
+   ]
+  },
+  "abdominal_bracing": {
+   "name": "Abdominal bracing",
+   "category": "core",
+   "equipment": [
+    "Mat or a chair"
+   ],
+   "what": "Gently wakes up your deep tummy muscles, which support your back and posture.",
+   "steps": [
+    "Lie on your back with knees bent, or sit tall on a chair.",
+    "Breathe in normally.",
+    "As you breathe out, gently draw your tummy in, as if bracing for a light tap.",
+    "Hold for a few seconds while breathing normally, then relax."
+   ],
+   "tips": [
+    "Gentle, about a quarter of your full effort.",
+    "Keep breathing, never hold your breath."
+   ],
+   "modifications": [
+    "Do it seated if lying down is uncomfortable."
+   ],
+   "safety": [
+    "Stop if it causes pain or makes you dizzy."
+   ]
+  },
+  "heel_slides": {
+   "name": "Heel slides",
+   "category": "core",
+   "equipment": [
+    "Mat"
+   ],
+   "what": "Gentle core and hip control, keeping your tummy steady while one leg moves.",
+   "steps": [
+    "Lie on your back, knees bent, feet flat.",
+    "Gently brace your tummy as in abdominal bracing.",
+    "Slowly slide one heel along the mat until the leg is nearly straight.",
+    "Slide it back slowly, then switch legs."
+   ],
+   "tips": [
+    "Keep your lower back still and relaxed.",
+    "Slow is best."
+   ],
+   "modifications": [
+    "Slide only part of the way.",
+    "Put a towel under your heel so it glides more easily."
+   ],
+   "safety": [
+    "Stop if your back starts to ache."
+   ]
+  },
+  "cool_down": {
+   "name": "Cool-down",
+   "category": "cool_down",
+   "equipment": [
+    "None"
+   ],
+   "what": "Lets your body settle after the session.",
+   "steps": [
+    "Walk slowly for a couple of minutes.",
+    "Do a few gentle stretches that feel nice, such as calves, thighs and shoulders.",
+    "Hold each stretch softly. No forcing and no bouncing."
+   ],
+   "tips": [
+    "It should feel relaxing."
+   ],
+   "modifications": [
+    "Do your stretches seated."
+   ],
+   "safety": [
+    "No forced stretching."
+   ]
+  },
+  "hamstring_curl": {
+   "name": "Seated hamstring curl (machine)",
+   "category": "legs",
+   "equipment": [
+    "Seated leg curl machine"
+   ],
+   "what": "Strengthens the back of your thighs, which supports your knees.",
+   "steps": [
+    "Choose the lightest weight. Ask an instructor to set the machine up for you.",
+    "Sit with the pad behind your lower legs, just above the ankles.",
+    "Slowly bend your knees to pull the pad down and under.",
+    "Let it come back up slowly."
+   ],
+   "tips": [
+    "Slow and controlled.",
+    "Keep your back against the seat."
+   ],
+   "modifications": [
+    "Use a smaller range.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if it aggravates your knees today."
+   ],
+   "safety": [
+    "Stop if you feel cramp or sharp pain."
+   ]
+  },
+  "calf_raise": {
+   "name": "Supported calf raises",
+   "category": "legs",
+   "equipment": [
+    "Something steady to hold, or a calf machine"
+   ],
+   "what": "Strengthens your calves and ankles for walking and balance.",
+   "steps": [
+    "Stand holding something steady, feet hip-width apart.",
+    "Slowly rise up onto your toes.",
+    "Pause for a moment, then lower your heels slowly."
+   ],
+   "tips": [
+    "Hold on for balance. That's what the support is for.",
+    "Small and smooth is fine."
+   ],
+   "modifications": [
+    "Do them seated (lift your heels while sitting).",
+    "Make the lift smaller."
+   ],
+   "safety": [
+    "Stop if you feel cramp or ankle pain."
+   ]
+  },
+  "seated_row": {
+   "name": "Seated row (machine)",
+   "category": "upper_body",
+   "equipment": [
+    "Seated row machine"
+   ],
+   "what": "Strengthens your upper back for better posture.",
+   "steps": [
+    "Choose the lightest weight. Ask an instructor to check the setup.",
+    "Sit tall with your chest towards the pad and hold the handles.",
+    "Gently squeeze your shoulder blades back as you pull the handles towards you.",
+    "Let them go back slowly."
+   ],
+   "tips": [
+    "Shoulders down, away from your ears.",
+    "Breathe out as you pull."
+   ],
+   "modifications": [
+    "Use a smaller range.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Only do this if your shoulders tolerate it. Skip it if your shoulders or neck are sore."
+   ],
+   "safety": [
+    "Stop if it aggravates your neck or shoulders."
+   ]
+  },
+  "bicep_curl": {
+   "name": "Bicep curls",
+   "category": "upper_body",
+   "equipment": [
+    "Light dumbbells"
+   ],
+   "what": "Strengthens the front of your arms for lifting and carrying.",
+   "steps": [
+    "Sit or stand tall with a light dumbbell in each hand, palms facing forwards.",
+    "Slowly bend your elbows to bring the weights up.",
+    "Lower them slowly."
+   ],
+   "tips": [
+    "Keep your elbows by your sides.",
+    "Keep your wrists straight."
+   ],
+   "modifications": [
+    "Use lighter weights, or none.",
+    "Do one arm at a time."
+   ],
+   "contraindications": [
+    "Optional. Only do this if your wrists tolerate it."
+   ],
+   "safety": [
+    "Stop if your wrists hurt."
+   ]
+  },
+  "swim": {
+   "name": "Swim",
+   "category": "cardio",
+   "equipment": [
+    "Pool"
+   ],
+   "what": "Low-impact movement, with the water supporting your body.",
+   "steps": [
+    "Swim at an easy, comfortable pace.",
+    "Take breaks at the side whenever you need to.",
+    "Choose a stroke that doesn't bother your neck or shoulders.",
+    "Stop before you get exhausted."
+   ],
+   "tips": [
+    "Gently walking or floating in the water counts too."
+   ],
+   "modifications": [
+    "Shorten the swim.",
+    "Change stroke.",
+    "Use a float."
+   ],
+   "safety": [
+    "Stop before exhaustion.",
+    "Don't make swims longer until you're recovering well from your current ones."
+   ]
+  },
+  "walk": {
+   "name": "Woodland walk",
+   "category": "cardio",
+   "equipment": [
+    "Comfortable shoes"
+   ],
+   "what": "Gentle time outdoors. Optional, and only if it feels good.",
+   "steps": [
+    "Walk at an easy pace.",
+    "Turn back whenever you like."
+   ],
+   "tips": [
+    "Enjoy it. There's no distance or time to hit."
+   ],
+   "modifications": [
+    "A shorter walk, or a sit on a bench, is fine."
+   ],
+   "safety": [
+    "Choose even paths if your energy is low."
+   ]
+  }
+ },
+ "readiness": {
+  "method": "Enter pain (0-10) and energy (1-5). The app compares them with your usual day, suggests a colour, and you confirm or change it.",
+  "levels": {
+   "green": {
+    "label": "Green",
+    "meaning": "Feeling reasonably well",
+    "action": "Do the planned easy session."
+   },
+   "amber": {
+    "label": "Amber",
+    "meaning": "More pain or fatigue than usual",
+    "action": "Do a lighter version (about half), or rest."
+   },
+   "red": {
+    "label": "Red",
+    "meaning": "Flare, significant exhaustion or poor recovery",
+    "action": "Rest. There's nothing to catch up on."
+   }
+  },
+  "thresholds": {
+   "amber": {
+    "pain_above_usual": 2,
+    "energy_below_usual": 1
+   },
+   "red": {
+    "pain_above_usual": 4,
+    "energy_below_usual": 2
+   }
+  },
+  "override": "You can always choose rest instead, whatever the colour."
+ },
+ "progression": {
+  "sequence": [
+   "Get comfortable with the movement and how you recover",
+   "Repeat the starting routine when you tolerate it",
+   "Consider adding a few reps",
+   "Consider adding a second set",
+   "Only then consider a small increase in resistance"
+  ],
+  "settled_sessions": 3,
+  "rules": [
+   "Change one thing at a time.",
+   "Never progress during a flare.",
+   "Wait until the 24 h and 48 h checks are in before deciding a session felt easy.",
+   "Don't increase swim time and gym resistance in the same period.",
+   "The app only suggests. You decide."
+  ],
+  "swim_step_minutes": 2
+ },
+ "safety": {
+  "stop_if": [
+   "Sharp pain",
+   "Unusual weakness",
+   "Dizziness",
+   "Symptoms getting significantly worse"
+  ],
+  "avoid": [
+   "Heavy overhead pressing",
+   "Deep squats",
+   "Planks (at first)"
+  ],
+  "general": [
+   "Start with light resistance and controlled movements.",
+   "Rest between exercises as long as you need.",
+   "Avoid pushing through significant pain or fatigue.",
+   "Avoid anything that aggravates your wrists, shoulders, neck or knees.",
+   "Notice how you feel later that day and over the next 24-48 hours.",
+   "Ask a gym instructor to check the machine setup and your technique."
+  ],
+  "crashes": "If activity keeps causing big or long-lasting crashes, reduce activity and talk to a healthcare professional."
+ },
+ "tracking": {
+  "pain": {
+   "min": 0,
+   "max": 10,
+   "label": "Pain",
+   "low": "none",
+   "high": "worst"
+  },
+  "energy": {
+   "min": 1,
+   "max": 5,
+   "label": "Energy",
+   "low": "empty",
+   "high": "full"
+  },
+  "recovery_checks_hours": [
+   24,
+   48
+  ],
+  "crash": {
+   "pain_up": 2,
+   "energy_down": 2
+  },
+  "fields": [
+   "date",
+   "workout type",
+   "exercises completed",
+   "sets and reps",
+   "resistance or machine setting",
+   "duration",
+   "pain before and after",
+   "energy before and after",
+   "recovery at 24 h and 48 h",
+   "notes"
+  ]
+ },
+ "nutrition": {
+  "habits": [
+   {
+    "id": "protein",
+    "label": "Protein at my main meals"
+   },
+   {
+    "id": "snacks",
+    "label": "Planned my snacks"
+   },
+   {
+    "id": "mindful",
+    "label": "Mindful of grazing and portions"
+   }
+  ],
+  "note": "Small, kind habits. No banned foods, no counting."
+ },
+ "body": {
+  "measures": [
+   {
+    "id": "waist",
+    "label": "Waist",
+    "unit": "cm"
+   },
+   {
+    "id": "weight",
+    "label": "Weight",
+    "unit": "kg"
+   }
+  ],
+  "note": "Optional. Only if and when you'd like to."
+ },
+ "review": {
+  "every_weeks": 12,
+  "options": [
+   "Continue as it is",
+   "Adjust to make it more achievable",
+   "Progress gradually if recovery has been good",
+   "Prioritise recovery if symptoms have increased"
+  ],
+  "success": "Success means taking part in a way you can keep up, better everyday function and good recovery, not completing every session."
+ },
+ "app": {
+  "backup_reminder_days": 14,
+  "rest_timer_seconds": 60
+ }
+}
