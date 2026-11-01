@@ -6,7 +6,7 @@ export const SHORT = { gym_a: "Gym A", gym_b: "Gym B", swim: "Swim", walk: "Walk
 export const ICONS = { gym_a: "🏋️", gym_b: "🏋️", swim: "🏊", walk: "🌳", recovery: "🛋️" };
 export const colour = (actId) => `var(--${actId})`;
 
-let plan;
+let plan, pictos;
 
 // Typographic dashes for display (" - " and ranges like "5-7"), leaving date fields untouched.
 function prettify(v, key = "") {
@@ -19,11 +19,25 @@ function prettify(v, key = "") {
 }
 
 export async function loadPlan() {
-  if (!plan) plan = await fetch("data/plan.json").then((r) => r.json()).then(prettify);
+  if (!plan) {
+    [plan, pictos] = await Promise.all([
+      fetch("data/plan.json").then((r) => r.json()).then(prettify),
+      fetch("data/pictos.json").then((r) => r.json()),
+    ]);
+  }
   return plan;
 }
 
 export const getPlan = () => plan;
+
+// Real hex colours for the pictogram arrows (CSS variables don't reach inside the SVG markup).
+const ACCENTS = { gym_a: "#13798a", gym_b: "#5a5fb0", swim: "#2a7fbf", walk: "#8a6a45", recovery: "#8c9a9c" };
+
+export function picto(key, actId = "gym_a", cls = "pic") {
+  const inner = pictos?.[key];
+  if (!inner) return "";
+  return `<svg class="${cls}" viewBox="0 0 120 100" aria-hidden="true">${inner.replaceAll("__ACCENT__", ACCENTS[actId] ?? ACCENTS.gym_a)}</svg>`;
+}
 
 export function parseDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);

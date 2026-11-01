@@ -1,8 +1,11 @@
 import * as db from "./db.js";
 import {
-  loadPlan, getPlan, position, weekDates, suggestedFor, activity, sessionItems, doseText,
+  loadPlan, getPlan, position, weekDates, suggestedFor, activity, sessionItems, doseText, picto,
   DAY_NAMES, SHORT, ICONS, colour, isoDate, parseDate, dayKeyOf,
 } from "./plan.js";
+import { renderPlan, openGuide } from "./planview.js";
+import { renderProgress, progressAction } from "./progress.js";
+import { renderHistory } from "./history.js";
 import { esc, fmt, today, toast, celebrate } from "./ui.js";
 import { unlockAudio } from "./beep.js";
 import { getDay, updateDay, suggestLevel, pendingChecks, recentCrashes, isCrash } from "./checks.js";
@@ -101,11 +104,13 @@ function dayStrip(now, doneDates) {
   }).join("")}</div>`;
 }
 
-function itemRow(it) {
+function itemRow(it, actId) {
   const ex = getPlan().exercises[it.exercise];
   const opt = it.optional ? `<span class="tag">optional</span>` : "";
-  return `<div class="item"><div class="txt"><div class="name">${esc(ex.name)}${opt}</div>
-    <div class="dose">${esc(doseText(it))}</div><div class="note">${esc(it.note ?? "")}</div></div></div>`;
+  return `<button type="button" class="item linkrow" data-go="guide" data-ex="${it.exercise}" data-act="${actId}">
+    <span class="pic-wrap">${picto(it.exercise, actId)}</span>
+    <span class="txt"><span class="name">${esc(ex.name)}${opt}</span>
+    <span class="dose">${esc(doseText(it))}</span><span class="note">${esc(it.note ?? "")}</span></span></button>`;
 }
 
 async function planCard(actId, level = "green") {
@@ -118,11 +123,11 @@ async function planCard(actId, level = "green") {
     const left = level === "amber" ? sessionItems(actId).filter((it) => !it.amber) : [];
     const leftNote = left.length
       ? `<p class="muted small" style="margin:8px 0">Left out today: ${left.map((it) => esc(getPlan().exercises[it.exercise].name)).join(", ")}. You can add any back during the session.</p>` : "";
-    return `${head}<div class="session-body">${items.map(itemRow).join("")}${leftNote}</div>`;
+    return `${head}<div class="session-body">${items.map((it) => itemRow(it, actId)).join("")}${leftNote}</div>`;
   }
   const ex = a.exercise ? getPlan().exercises[a.exercise] : null;
   const body = ex
-    ? `<p>${esc(ex.what)}</p><ul>${ex.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>`
+    ? `<div class="guide-pic small-pic">${picto(a.exercise, actId)}</div><p>${esc(ex.what)}</p><ul>${ex.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>`
     : `<p>${esc(getPlan().meta.principles.at(-1))}. Rest, or some gentle movement if you'd like it.</p>`;
   return `${head}<div class="session-body" style="padding:12px 16px">${body}</div>`;
 }
@@ -264,16 +269,28 @@ async function renderFlow() {
 }
 
 // ------------------------------------------------------------------ routing
-function placeholder(title, text) {
-  return () => { $screen.innerHTML = `<h1>${title}</h1><div class="card empty">${text}</div>`; };
-}
-
 const screens = {
   today: renderToday,
-  plan: placeholder("Plan", "The weekly plan and exercise guide are coming in a later update."),
-  progress: placeholder("Progress", "Your progress charts are coming in a later update. Everything you log now will appear there."),
-  history: placeholder("History", "Your history list is coming in a later update. Everything you log now will appear there."),
+  plan: () => renderPlan($screen, true),
+  progress: () => renderProgress($screen, state.start),
+  history: () => renderHistory($screen),
 };
+
+// The one-page picture guide, full screen with zoom.
+function openPoster() {
+  const el = document.createElement("div");
+  el.className = "viewer";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", "Picture guide");
+  el.innerHTML = `<div class="viewer-bar"><b>Picture guide</b><span><button type="button" data-zoom>Zoom</button>
+    <button type="button" data-close>Close</button></span></div>
+    <div class="viewer-body"><img src="img/guide.jpg" alt="One-page picture guide to the plan"></div>`;
+  el.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close]")) el.remove();
+    if (e.target.closest("[data-zoom]")) el.classList.toggle("zoomed");
+  });
+  document.body.append(el);
+}
 
 async function show(tab) {
   state.tab = tab;
@@ -330,6 +347,16 @@ $screen.addEventListener("click", async (e) => {
   const f = state.flow;
   const v = b.dataset.v;
   if (go === "upain" || go === "uenergy") return welcomeChip(b);
+  if (go === "guide") return openGuide(b.dataset.ex, b.dataset.act);
+  if (go === "poster") return openPoster();
+  if (go.startsWith("body-")) {
+    if (await progressAction(go, b, state.start)) {
+      const y = window.scrollY;
+      await renderProgress($screen, state.start);
+      window.scrollTo(0, y);
+    }
+    return;
+  }
   if (go === "settings") {
     return settingsView.start(async (changed) => {
       if (changed) {

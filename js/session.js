@@ -1,6 +1,6 @@
 // Logging a gym session, swim or walk: exercises, sets, rest timer, autosave, resume, finish with pain and energy.
 import * as db from "./db.js";
-import { getPlan, activity, doseText, colour } from "./plan.js";
+import { getPlan, activity, doseText, colour, picto } from "./plan.js";
 import { esc, toast, celebrate, num, mmss } from "./ui.js";
 import { beep, unlockAudio } from "./beep.js";
 import { levelFor, swimTarget } from "./progression.js";
@@ -144,7 +144,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
     const badge = item.status === "done" ? `<span class="badge ok">✓ Done</span>`
       : item.status === "skipped" ? `<span class="badge skip">${item.lighter ? "Lighter day" : "Skipped"}</span>` : "";
     const head = `<button type="button" class="ex-head" data-act="toggle" data-i="${i}" aria-expanded="${isOpen}">
-      <span class="txt"><span class="name">${esc(ex.name)}${item.planned.optional ? ' <span class="tag">optional</span>' : ""}</span>
+      <span class="pic-wrap">${picto(item.exercise, S.act)}</span><span class="txt"><span class="name">${esc(ex.name)}${item.planned.optional ? ' <span class="tag">optional</span>' : ""}</span>
       <span class="dose">${esc(item.planned.dose)}</span></span>${badge}</button>`;
     if (!isOpen) return `<div class="ex ${item.status}">${head}</div>`;
     if (item.status === "skipped" && item.lighter) {
@@ -201,7 +201,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
         <button type="button" class="back" data-act="exit">‹ Today</button>
         <h1>${esc(S.title)}</h1><p>${S.target ? `About ${esc(S.target)} min` : esc(a.focus)}${lighterTag()}</p>
       </div>
-      <div class="card"><p>${esc(ex.what)}</p><ul>${ex.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+      <div class="card"><div class="guide-pic">${picto(a.exercise, S.act)}</div><p>${esc(ex.what)}</p><ul>${ex.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
         ${ex.tips.map((t) => `<p class="tip">✓ ${esc(t)}</p>`).join("")}${stopSigns()}</div>
       <button type="button" class="btn finish" data-act="finish">I'm back: log it</button>
       <button type="button" class="linkbtn danger-link" data-act="discard">Changed my mind: discard</button>`;
