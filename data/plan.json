@@ -17,43 +17,66 @@
  "schedule": {
   "days": {
    "mon": {
+    "activities": [
+     "gym_a"
+    ],
     "activity": "gym_a",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
    },
    "tue": {
-    "activity": "swim",
-    "allow_skip": true,
-    "allow_reschedule": true,
-    "mandatory": false
-   },
-   "wed": {
+    "activities": [
+     "recovery"
+    ],
     "activity": "recovery",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
    },
+   "wed": {
+    "activities": [
+     "swim"
+    ],
+    "activity": "swim",
+    "allow_skip": true,
+    "allow_reschedule": true,
+    "mandatory": false
+   },
    "thu": {
-    "activity": "gym_b",
+    "activities": [
+     "recovery"
+    ],
+    "activity": "recovery",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
    },
    "fri": {
+    "activities": [
+     "swim"
+    ],
     "activity": "swim",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
    },
    "sat": {
-    "activity": "walk",
+    "activities": [
+     "gym_b",
+     "swim"
+    ],
+    "activity": "gym_b",
+    "note": "Gym first, then the swim.",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
    },
    "sun": {
-    "activity": "swim",
+    "activities": [
+     "recovery"
+    ],
+    "activity": "recovery",
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
@@ -225,7 +248,8 @@
    "name": "Woodland walk",
    "focus": "Gentle, optional",
    "optional": true,
-   "exercise": "walk"
+   "exercise": "walk",
+   "hidden": true
   },
   "recovery": {
    "kind": "recovery",

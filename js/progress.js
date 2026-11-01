@@ -4,7 +4,7 @@ import * as db from "./db.js";
 import { getPlan, parseDate, addDays, isoDate, position, sessionItems } from "./plan.js";
 import { esc, fmt, toast, num, today } from "./ui.js";
 import { lineChart } from "./charts.js";
-import { sessionCrashed } from "./checks.js";
+import { sessionCrashed, baselineOf } from "./checks.js";
 import { levelFor, swimTarget } from "./progression.js";
 
 const avg = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
@@ -35,7 +35,7 @@ function totals(sessions, days, now) {
   const rests = days.filter((d) => d.rest).length;
   const t = getPlan().schedule.targets;
   return `<h2>So far</h2><div class="stats">${tile(count("gym"), "gym sessions")}${tile(count("swim"), "swims")}
-      ${tile(count("walk"), "walks")}${tile(rests, "rest days chosen")}</div>
+      ${count("walk") ? tile(count("walk"), "walks") : ""}${tile(rests, "rest days chosen")}</div>
     <p class="muted small">This week: ${count("gym", wk)} gym (up to ${t.gym_per_week}) and ${count("swim", wk)} swim${count("swim", wk) === 1 ? "" : "s"} (up to ${t.swims_per_week}). The targets are gentle guides, not quotas.</p>`;
 }
 
@@ -43,7 +43,7 @@ async function swimSection(sessions) {
   const swims = sessions.filter((s) => s.kind === "swim" && s.minutes != null);
   const target = await swimTarget();
   const recent = [...swims].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
-  const comfy = swims.filter((s) => !sessionCrashed(s) && (s.after?.energy ?? 0) >= (s.before?.energy ?? 99) - 1);
+  const comfy = swims.filter((s) => !sessionCrashed(s) && (s.after?.energy ?? 0) >= (baselineOf(s)?.energy ?? 99) - 1);
   const best = comfy.length ? Math.max(...comfy.map((s) => s.minutes)) : null;
   return `<h2>Swimming</h2><div class="card">
     <div class="g-row"><span>Your swim target now</span><b>${esc(target.minutes)} min</b></div>

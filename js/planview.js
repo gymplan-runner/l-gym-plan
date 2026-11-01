@@ -1,6 +1,6 @@
-// Plan tab: the weekly rhythm, Sessions A and B, swim and walk, how readiness and progression work,
+// Plan tab: the weekly rhythm, Sessions A and B, swimming, how readiness and progression work,
 // safety, eating habits and the 12-week review. Tapping any exercise opens its guide with a picture.
-import { getPlan, activity, sessionItems, doseText, picto, DAY_KEYS, DAY_NAMES, ICONS, colour } from "./plan.js";
+import { getPlan, activity, sessionItems, doseText, picto, suggestedFor, dayNote, DAY_KEYS, DAY_NAMES, ICONS, colour } from "./plan.js";
 import { esc } from "./ui.js";
 import { withLevels, swimTarget } from "./progression.js";
 
@@ -27,10 +27,11 @@ export async function renderPlan($screen, hasGuide) {
   const plan = getPlan();
   const swim = await swimTarget();
   const days = DAY_KEYS.map((k) => {
-    const actId = plan.schedule.days[k].activity, a = activity(actId);
-    const target = actId === "swim" ? `${swim.minutes} min` : a.max_minutes ? `up to ${a.max_minutes} min` : a.focus;
-    return `<div class="dayrow"><span class="dot" style="background:${actId === "recovery" ? "var(--line)" : colour(actId)}"></span>
-      <b>${DAY_NAMES[k]}</b><span>${ICONS[actId]} ${esc(a.name)}</span><span class="muted small">${esc(target)}</span></div>`;
+    const acts = suggestedFor(k);
+    const target = (actId) => (actId === "swim" ? `${swim.minutes} min` : activity(actId).max_minutes ? `up to ${activity(actId).max_minutes} min` : activity(actId).focus);
+    return acts.map((actId, i) => `<div class="dayrow${i < acts.length - 1 ? " joined" : ""}"><span class="dot" style="background:${actId === "recovery" ? "var(--line)" : colour(actId)}"></span>
+      <b>${i ? "" : DAY_NAMES[k]}</b><span>${i ? "then " : ""}${ICONS[actId]} ${esc(activity(actId).name)}</span><span class="muted small">${esc(target(actId))}</span></div>`).join("")
+      + (dayNote(k) ? `<p class="muted small daynote">${esc(dayNote(k))}</p>` : "");
   }).join("");
   const lv = plan.readiness.levels;
   $screen.innerHTML = `<h1>Plan</h1>
@@ -42,8 +43,6 @@ export async function renderPlan($screen, hasGuide) {
     ${await sessionBlock("gym_b")}
     <div class="session-head" style="background:${colour("swim")}"><h2>${ICONS.swim} Swimming</h2><p>Up to ${plan.schedule.targets.swims_per_week} a week · ${esc(swim.minutes)} min</p></div>
     <div class="session-body">${row({ exercise: "swim", minutes: swim.minutes }, "swim")}</div>
-    <div class="session-head" style="background:${colour("walk")}"><h2>${ICONS.walk} Woodland walk</h2><p>Gentle and optional</p></div>
-    <div class="session-body">${row({ exercise: "walk" }, "walk")}</div>
     <h2>Green, amber or red</h2>
     <div class="card small">
       ${["green", "amber", "red"].map((k) => `<div class="light ${k}"><b>${lv[k].label}</b>: ${esc(lv[k].meaning)}.<br>${esc(lv[k].action)}</div>`).join("")}

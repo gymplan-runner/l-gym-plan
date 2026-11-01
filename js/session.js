@@ -1,7 +1,7 @@
 // Logging a gym session, swim or walk: exercises, sets, rest timer, autosave, resume, finish with pain and energy.
 import * as db from "./db.js";
-import { getPlan, activity, doseText, colour, picto } from "./plan.js";
-import { esc, toast, celebrate, num, mmss } from "./ui.js";
+import { getPlan, activity, doseText, colour, picto, parseDate } from "./plan.js";
+import { esc, toast, celebrate, num, mmss, fmt } from "./ui.js";
 import { beep, unlockAudio } from "./beep.js";
 import { levelFor, swimTarget } from "./progression.js";
 
@@ -22,10 +22,12 @@ function newItem(it, level, lv) {
   };
 }
 
-export async function newSession({ act, date, week, level, before }) {
+// loggedLater: added afterwards, with no "before" check; baseline (her usual day) stands in for it.
+export async function newSession({ act, date, week, level, before, loggedLater = false, baseline = null }) {
   const a = activity(act);
   const s = { id: `${act}-${date}-${Date.now().toString(36)}`, kind: a.kind, act, title: a.name, date, week, level,
     before, after: { pain: null, energy: null }, checks: {}, status: "in_progress", startedAt: Date.now(), note: "" };
+  if (loggedLater) Object.assign(s, { loggedLater, baseline });
   if (a.kind === "gym") {
     s.items = [];
     for (const it of a.items) {
@@ -113,6 +115,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
 
   const bg = () => colour(S.act);
   const lighterTag = () => (S.level === "amber" ? ` · <b>lighter version</b>` : "");
+  const when = () => fmt(parseDate(S.date), { weekday: "long", day: "numeric", month: "long" });
 
   function chips(name, idx, values, selected) {
     return `<div class="chips" role="group">${values.map((v) =>
@@ -181,7 +184,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       <div class="wk-top" style="background:${bg()}">
         <button type="button" class="back" data-act="exit">‹ Today</button>
         <h1>${esc(S.title)}</h1>
-        <p>${editing ? "Editing a finished session" : `<span id="elapsed">${elapsed()} min</span>`} · ${done} of ${total} done${lighterTag()}</p>
+        <p>${editing ? "Editing a finished session" : S.loggedLater ? `Adding ${esc(when())}` : `<span id="elapsed">${elapsed()} min</span>`} · ${done} of ${total} done${lighterTag()}</p>
       </div>
       <p class="muted small">Rest between exercises as long as you need. Skipping anything is fine.</p>
       ${stopSigns()}
@@ -208,6 +211,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
   }
 
   function startRest() {
+    if (S.loggedLater) return;  // no rest timer when adding a session afterwards
     clearInterval(restTimer);
     rest = { left: getPlan().app.rest_timer_seconds };
     restTimer = setInterval(() => {
@@ -221,7 +225,8 @@ export function createSessionView({ $screen, $tabs, onExit }) {
   function renderFinish() {
     const t = getPlan().tracking;
     const editing = S.status === "finished";
-    if (S.durationMin == null && S.kind === "gym") S.durationMin = elapsed();
+    if (S.durationMin == null && S.kind === "gym" && !S.loggedLater) S.durationMin = elapsed();
+    const later = S.loggedLater;
     const gym = S.kind === "gym";
     const summary = gym ? (() => {
       const done = S.items.filter((i) => i.status === "done").length;
@@ -230,16 +235,16 @@ export function createSessionView({ $screen, $tabs, onExit }) {
     })() : "";
     const mins = gym ? S.durationMin : S.minutes;
     $screen.innerHTML = `
-      <div class="wk-top" style="background:${bg()}"><button type="button" class="back" data-act="${gym || !editing ? "unfinish" : "exit"}">‹ Back</button>
-        <h1>${editing ? "Edit" : "Well done 💙"}</h1><p>${esc(S.title)}${lighterTag()}</p></div>
+      <div class="wk-top" style="background:${bg()}"><button type="button" class="back" data-act="${editing && !gym ? "exit" : later && !gym ? "drop" : "unfinish"}">‹ Back</button>
+        <h1>${editing ? "Edit" : "Well done 💙"}</h1><p>${esc(S.title)}${later ? ` · ${esc(when())}` : ""}${lighterTag()}</p></div>
       <div class="card">${summary}
         <label class="mini">${gym ? "How long did it take? (minutes)" : `Minutes ${S.kind === "swim" ? "in the water" : "walking"}`}
           <input class="in wide" inputmode="numeric" data-field="mins" value="${mins ?? ""}" placeholder="${esc(S.target ?? "")}"></label>
-        <p class="q">Pain now (${t.pain.min}–${t.pain.max})</p>${scoreChips("apain", t.pain, S.after.pain)}
-        <p class="q">Energy now (${t.energy.min}–${t.energy.max})</p>${scoreChips("aenergy", t.energy, S.after.energy)}
+        <p class="q">Pain ${later ? "afterwards" : "now"} (${t.pain.min}–${t.pain.max})</p>${scoreChips("apain", t.pain, S.after.pain)}
+        <p class="q">Energy ${later ? "afterwards" : "now"} (${t.energy.min}–${t.energy.max})</p>${scoreChips("aenergy", t.energy, S.after.energy)}
         ${S.before?.pain != null ? `<p class="muted small">Before: pain ${S.before.pain}, energy ${S.before.energy}.</p>` : ""}
         <label class="mini">Notes or symptoms<textarea class="in wide" data-field="snote" rows="3" placeholder="Anything to remember?">${esc(S.note ?? "")}</textarea></label>
-        <p class="muted small">I'll ask how you feel tomorrow and the day after, as delayed effects matter most.</p>
+        <p class="muted small">${later ? "I'll check in on how you're feeling over the next couple of days" : "I'll ask how you feel tomorrow and the day after"}, as delayed effects matter most.</p>
         <button type="button" class="btn" data-act="confirm">${editing ? "Save changes" : "Save"}</button>
       </div>
       ${editing && !gym ? `<button type="button" class="linkbtn danger-link" data-act="discard">Delete this entry</button>` : ""}`;
@@ -253,6 +258,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
     const item = S.items?.[i];
     switch (act) {
       case "exit": await save(); return leave();
+      case "drop": await db.remove("sessions", S.id); return leave();  // backing out of adding one afterwards
       case "toggle": open = open === i ? null : i; break;
       case "tick": {
         const st = item.sets[j];
@@ -292,6 +298,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
         }
         await save();
         if (!first) toast("Changes saved");
+        else if (S.loggedLater) celebrate("Added", "Thanks for logging it. I'll check in on how you're feeling over the next couple of days.");
         else if (S.level === "amber") celebrate("Logged", "A lighter session is still a real session. Well listened to.");
         else celebrate(S.kind === "gym" ? "Session done" : S.kind === "swim" ? "Swim logged" : "Walk logged", "Lovely. Rest up, and let me know how you feel tomorrow.");
         return leave();

@@ -33,7 +33,10 @@ export function isCrash(before, check) {
     || (check.energy != null && before.energy != null && before.energy - check.energy >= c.energy_down);
 }
 
-export const sessionCrashed = (s) => isCrash(s.before, s.checks?.h24) || isCrash(s.before, s.checks?.h48);
+// What a session's checks are compared with: her scores before it, or, for one logged afterwards, her usual day.
+export const baselineOf = (s) => s.before ?? s.baseline ?? null;
+
+export const sessionCrashed = (s) => isCrash(baselineOf(s), s.checks?.h24) || isCrash(baselineOf(s), s.checks?.h48);
 
 // Checks are offered for a couple of days, then quietly lapse. Nothing is ever "overdue".
 // 24 h: the day after (and the day after that). 48 h: two days after (and the day after that).

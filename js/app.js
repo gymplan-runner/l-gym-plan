@@ -1,17 +1,17 @@
 import * as db from "./db.js";
 import {
-  loadPlan, getPlan, position, weekDates, suggestedFor, activity, sessionItems, doseText, picto,
-  DAY_NAMES, SHORT, ICONS, colour, isoDate, parseDate, dayKeyOf,
+  loadPlan, getPlan, position, weekDates, suggestedFor, dayNote, activity, sessionItems, doseText, picto,
+  DAY_NAMES, SHORT, ICONS, colour, isoDate, parseDate, dayKeyOf, addDays,
 } from "./plan.js";
 import { renderPlan, openGuide } from "./planview.js";
 import { renderProgress, progressAction } from "./progress.js";
 import { renderHistory } from "./history.js";
 import { esc, fmt, today, toast, celebrate } from "./ui.js";
 import { unlockAudio } from "./beep.js";
-import { getDay, updateDay, suggestLevel, pendingChecks, recentCrashes, isCrash } from "./checks.js";
+import { getDay, updateDay, suggestLevel, pendingChecks, recentCrashes, isCrash, baselineOf } from "./checks.js";
 import { createSessionView, newSession, scoreChips } from "./session.js";
 import { suggestion, describe, accept, snooze, swimTarget, withLevels } from "./progression.js";
-import { createSettingsView, needsBackupReminder, backupNow, readBackup } from "./settings.js";
+import { createSettingsView, needsBackupReminder, backupNow, readBackup, BACKUP_HOW } from "./settings.js";
 
 const $screen = document.getElementById("screen");
 const $tabs = document.getElementById("tabs");
@@ -19,7 +19,7 @@ const state = { tab: "today", name: "", start: null, usual: null, flow: null, dr
 const sessionView = createSessionView({ $screen, $tabs, onExit: () => show(state.tab) });
 const settingsView = createSettingsView({ $screen, $tabs });
 const viewActive = () => sessionView.active() || settingsView.active();
-const ACTS = ["gym_a", "gym_b", "swim", "walk"];
+const ACTS = ["gym_a", "gym_b", "swim"];
 const LEVELS = ["green", "amber", "red"];
 
 const todayIso = () => isoDate(today());
@@ -96,11 +96,16 @@ function ring(week, weeks) {
 function dayStrip(now, doneDates) {
   const iso = isoDate(now);
   return `<div class="daystrip">${weekDates(now).map(({ key, date }) => {
-    const act = suggestedFor(key);
-    const style = act === "recovery" ? "" : `style="background:${colour(act)}"`;
+    const acts = suggestedFor(key).filter((a) => a !== "recovery");
     const d = isoDate(date);
-    const cls = `${act === "recovery" ? "" : "act"} ${d === iso ? "today" : ""}`;
-    return `<div class="${cls}" ${style}><b>${key[0].toUpperCase() + key.slice(1)}</b>${SHORT[act]}${doneDates.has(d) ? "<i>✓</i>" : ""}</div>`;
+    const name = `<b>${key[0].toUpperCase() + key.slice(1)}</b>`, tick = doneDates.has(d) ? "<i>✓</i>" : "";
+    const cls = `${acts.length ? "act" : ""} ${acts.length > 1 ? "split" : ""} ${d === iso ? "today" : ""}`;
+    // A day with two sessions (Saturday: Gym B, then swim) is stacked in two colours.
+    if (acts.length > 1) {
+      return `<div class="${cls}">${acts.map((a, i) => `<span style="background:${colour(a)}">${i ? "" : name}${SHORT[a]}${i === acts.length - 1 ? tick : ""}</span>`).join("")}</div>`;
+    }
+    const style = acts.length ? `style="background:${colour(acts[0])}"` : "";
+    return `<div class="${cls}" ${style}>${name}${acts.length ? SHORT[acts[0]] : SHORT.recovery}${tick}</div>`;
   }).join("")}</div>`;
 }
 
@@ -180,7 +185,7 @@ async function renderToday() {
       <p class="small">${esc(plan.safety.crashes)}</p>
       <button type="button" class="linkbtn" data-go="crash-ok" data-key="${crashKey}">Thanks, got it</button></div>` : ""}
     ${backup ? `<div class="card backup"><b>Time for a backup</b><p class="small muted">${esc(backup)} It keeps your logs safe if anything happens to this phone.</p>
-      <button type="button" class="btn" data-go="backup">Back up now</button></div>` : ""}
+      <button type="button" class="btn" data-go="backup">Back up now</button>${BACKUP_HOW}</div>` : ""}
     ${checks.map(checkCard).join("")}
     ${inProgress ? `<div class="card start-card"><b>You have a ${esc(SHORT[inProgress.act].toLowerCase())} session open</b>
       <button type="button" class="btn" data-go="open" data-id="${inProgress.id}">Carry on</button></div>` : ""}
@@ -189,6 +194,7 @@ async function renderToday() {
       <div class="row2"><button type="button" class="btn ghost" data-go="sug-no">Not now</button>
       <button type="button" class="btn" data-go="sug-yes">Yes, try it</button></div></div>` : ""}
     <button type="button" class="btn big" data-go="choose">▶ Do a workout</button>
+    <button type="button" class="btn ghost" data-go="past">✏️ Log one I've already done</button>
     ${day.rest
       ? `<div class="done-banner">🛋️ Resting today. ${esc(plan.meta.principles.at(-1))}. <button type="button" class="linkbtn" data-go="rest-undo">Undo</button></div>`
       : `<button type="button" class="btn ghost" data-go="rest">🛋️ I'll rest today</button>`}
@@ -198,7 +204,8 @@ async function renderToday() {
     ${dayStrip(now, new Set(finished.map((s) => s.date)))}
     <p class="muted small" style="margin-top:8px">A gentle guide, not a quota. Any session can be done on any day, and rest is always a good choice.</p>
     <h2>Suggested for ${DAY_NAMES[pos.dayKey]}</h2>
-    ${await planCard(suggestedFor(pos.dayKey))}
+    ${dayNote(pos.dayKey) ? `<p class="muted small">${esc(dayNote(pos.dayKey))}</p>` : ""}
+    ${(await Promise.all(suggestedFor(pos.dayKey).map((a) => planCard(a)))).join("")}
     <h2>Eating habits <span class="muted small">(optional)</span></h2>
     <div class="card"><p class="muted small">${esc(plan.nutrition.note)}</p>
       ${plan.nutrition.habits.map((h) => {
@@ -224,12 +231,14 @@ async function renderFlow() {
         const a = activity(act);
         return `<button type="button" class="choice" data-go="pick" data-act="${act}">
           <span class="choice-head" style="background:${colour(act)}"><b>${ICONS[act]} ${esc(a.name)}</b>
-            <span>${esc(a.focus)}</span>${act === sug ? '<span class="badge sug">Suggested today</span>' : ""}
+            <span>${esc(a.focus)}</span>${sug.includes(act) ? '<span class="badge sug">Suggested today</span>' : ""}
             ${done.has(act) ? '<span class="badge sug">✓ Done today</span>' : ""}</span></button>`;
       }).join("")}
-      <button type="button" class="btn ghost" data-go="rest">🛋️ Rest today instead</button>`;
+      <button type="button" class="btn ghost" data-go="rest">🛋️ Rest today instead</button>
+      <button type="button" class="btn ghost" data-go="past">✏️ Already done it? Log it here</button>`;
     return;
   }
+  if (f.step === "past") return renderPast(f);
   const a = activity(f.act);
   const top = (title, sub) => `<div class="wk-top" style="background:${colour(f.act)}"><button type="button" class="back" data-go="flow-back">‹ Back</button>
     <h1>${title}</h1><p>${sub}</p></div>`;
@@ -266,6 +275,26 @@ async function renderFlow() {
     ${await planCard(f.act, f.level)}
     <button type="button" class="btn big" data-go="start">▶ Start${f.level === "amber" ? " lighter session" : ""}</button>
     <button type="button" class="btn ghost" data-go="rest">🛋️ Rest instead</button>`;
+}
+
+// "Log one I've already done": for a session she did without starting it in the app (today or an earlier day).
+// No "before" check: her usual day stands in for it when the 24 h and 48 h checks look for a dip.
+function renderPast(f) {
+  const pick = (go, val, on, label) => `<button type="button" class="chip ${on ? "on" : ""}" data-go="${go}" data-v="${val}" aria-pressed="${on}">${label}</button>`;
+  $screen.innerHTML = `
+    <div class="wk-top" style="background:var(--deep)"><button type="button" class="back" data-go="flow-exit">‹ Today</button>
+      <h1>Log one you've done</h1><p>Didn't start it in the app? No problem. Add it here.</p></div>
+    <div class="card">
+      <p class="q">Which session?</p>
+      ${ACTS.map((act) => `<button type="button" class="choice pickable ${f.act === act ? "on" : ""}" data-go="p-act" data-act="${act}" aria-pressed="${f.act === act}">
+        <span class="choice-head" style="background:${colour(act)}"><b>${ICONS[act]} ${esc(activity(act).name)}${f.act === act ? " ✓" : ""}</b></span></button>`).join("")}
+      <p class="q">When?</p>
+      <div class="chips pick">${pick("p-when", "today", f.when === "today", "Today")}${pick("p-when", "yesterday", f.when === "yesterday", "Yesterday")}${pick("p-when", "earlier", f.when === "earlier", "Earlier")}</div>
+      ${f.when === "earlier" ? `<input id="p-date" class="in wide" type="date" value="${f.date}" max="${todayIso()}" aria-label="Which day" style="margin-top:8px">` : ""}
+      <p class="q">Full session or a lighter one?</p>
+      <div class="chips pick">${pick("p-level", "green", f.level === "green", "Full")}${pick("p-level", "amber", f.level === "amber", "Lighter version")}</div>
+    </div>
+    <button type="button" class="btn big" data-go="p-next">Next: add the details ›</button>`;
 }
 
 // ------------------------------------------------------------------ routing
@@ -326,7 +355,7 @@ async function saveCheck(b, skipped) {
   await db.put("sessions", s);
   delete state.drafts[b.dataset.ck];
   if (!skipped) {
-    state.checkResult = isCrash(s.before, s.checks[key])
+    state.checkResult = isCrash(baselineOf(s), s.checks[key])
       ? { crash: true, text: `<b>Thanks for checking in.</b><p class="small">That's a noticeable dip compared with before the session. Go gently today. A lighter version or a rest day is a good choice next time.</p>` }
       : { crash: false, text: `<b>Thanks for checking in.</b> <span class="small">That looks like a good recovery.</span>` };
   }
@@ -334,6 +363,7 @@ async function saveCheck(b, skipped) {
 }
 
 $screen.addEventListener("input", (e) => {
+  if (e.target.id === "p-date" && state.flow?.step === "past") state.flow.date = e.target.value;
   const el = e.target.closest("[data-cknote]");
   if (el) state.drafts[el.dataset.cknote] = { ...state.drafts[el.dataset.cknote], note: el.value };
 });
@@ -397,6 +427,22 @@ $screen.addEventListener("click", async (e) => {
   }
   // the "Do a workout" flow
   if (go === "choose") { state.flow = { step: "choose" }; return renderFlow(); }
+  if (go === "past") { state.flow = { step: "past", act: null, when: "today", date: todayIso(), level: "green" }; return renderFlow(); }
+  if (go === "p-act") { f.act = b.dataset.act; return renderFlow(); }
+  if (go === "p-level") { f.level = v; return renderFlow(); }
+  if (go === "p-when") {
+    f.when = v;
+    f.date = isoDate(addDays(today(), { today: 0, yesterday: -1, earlier: -2 }[v]));
+    return renderFlow();
+  }
+  if (go === "p-next") {
+    if (!f.act) { toast("Pick which session you did"); return; }
+    if (!f.date || f.date > todayIso()) { toast("Pick a day up to today"); return; }
+    const s = await newSession({ act: f.act, date: f.date, week: weekOf(f.date), level: f.level, before: null,
+      loggedLater: true, baseline: state.usual ? { pain: state.usual.pain, energy: state.usual.energy } : null });
+    state.flow = null;
+    return sessionView.start(s, { finish: s.kind !== "gym" });
+  }
   if (go === "flow-exit") return show("today");
   if (go === "flow-back") {
     state.flow.step = f.step === "preview" ? "ready" : "choose";

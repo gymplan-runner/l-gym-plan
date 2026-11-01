@@ -43,6 +43,9 @@ p { margin: 0 0 8px; }
 .daystrip div b { display: block; font-size: 13px; color: var(--ink); }
 .daystrip .act { color: #fff; } .daystrip .act b { color: #fff; }
 .daystrip .today { border-color: var(--ink); }
+.daystrip .split { padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.daystrip .split span { display: block; padding: 6px 0 4px; }
+.daystrip .split span + span { flex: 1; padding: 4px 0 6px; }
 
 .session-head { border-radius: 18px 18px 0 0; color: #fff; padding: 14px 16px; margin-top: 12px; }
 .session-head h2 { margin: 0; color: #fff; }
@@ -193,6 +196,14 @@ details.how.stop summary { color: var(--amber); }
 .dayrow:last-of-type { border-bottom: 0; }
 .dayrow .dot { width: 12px; height: 12px; border-radius: 50%; }
 .dayrow .muted { grid-column: 3; }
+.dayrow.joined { border-bottom: 0; padding-bottom: 0; }
+.daynote { margin: 0 0 6px 22px; }
+.backup-how { margin: 8px 0 4px; padding-left: 20px; }
+.backup-how li { margin: 2px 0; }
+.chips.pick .chip { flex: 1 1 0; padding: 0 10px; }
+.choice.pickable { margin: 8px 0; border: 3px solid transparent; }
+.choice.pickable .choice-head { min-height: 52px; }
+.choice.pickable.on { border-color: var(--ink); }
 .sheet { position: fixed; inset: 0; background: rgba(14,40,46,.5); z-index: 45; display: flex; align-items: flex-end; }
 .sheet-card { background: var(--card); width: 100%; max-height: 88vh; overflow: auto; border-radius: 20px 20px 0 0; padding: 14px 16px calc(20px + var(--safe-b)); }
 .sheet-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

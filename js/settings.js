@@ -24,6 +24,12 @@ async function saveFiles(files) {
 
 const stamp = () => isoDate(new Date());
 
+// Where the backup file goes on iPhone: shown under every "Back up now" button.
+export const BACKUP_HOW = `<ol class="small muted backup-how"><li>In the panel that opens, scroll down and tap <b>Save to Files</b>.</li>
+  <li>Choose <b>iCloud Drive</b> (a folder such as "Gym backups" keeps it tidy), then tap <b>Save</b>.</li>
+  <li>Or tap <b>Mail</b> or <b>Messages</b> and send it to yourself. That works too.</li></ol>
+  <p class="small muted">You never need to open the file. To get your logs back, use <b>Restore from a backup file</b> in Settings.</p>`;
+
 export async function backupNow() {
   const data = await db.exportAll();
   const file = new File([JSON.stringify(data, null, 1)], `${APP_ID}-backup-${stamp()}.json`, { type: "application/json" });
@@ -129,7 +135,7 @@ export function createSettingsView({ $screen, $tabs }) {
         <p class="small muted">Everything you log stays on this phone. Save a backup now and then, so a lost phone (or deleting the app icon) doesn't lose it.</p>
         <p><b>Last backup:</b> ${last ? fmt(new Date(last), { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "never"}</p>
         <button type="button" class="btn" data-sact="backup">Back up now</button>
-        <p class="muted small" style="margin-top:6px">On iPhone choose <b>Save to Files</b>, then iCloud Drive, to keep a safe copy.</p>
+        ${BACKUP_HOW}
         <button type="button" class="btn ghost" data-sact="csv">Export for spreadsheets (CSV)</button>
         <label class="btn ghost filebtn">Restore from a backup file<input type="file" accept="application/json,.json" data-sact="file" hidden></label>
         ${restorePreview}

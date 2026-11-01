@@ -75,7 +75,9 @@ export function weekDates(date) {
   return DAY_KEYS.map((k, i) => ({ key: k, date: addDays(mon, i) }));
 }
 
-export const suggestedFor = (dayKey) => plan.schedule.days[dayKey].activity;
+// A day's suggested sessions, in order (e.g. Saturday: Gym B, then the swim).
+export const suggestedFor = (dayKey) => plan.schedule.days[dayKey].activities ?? [plan.schedule.days[dayKey].activity];
+export const dayNote = (dayKey) => plan.schedule.days[dayKey].note ?? "";
 export const activity = (actId) => ({ id: actId, ...plan.activities[actId] });
 
 // A session's items for a readiness level. Amber keeps about half: the items marked amber, with shorter times.
