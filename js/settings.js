@@ -65,7 +65,7 @@ export async function exportCsv() {
       const name = ex[it.exercise]?.name ?? it.exercise;
       const status = it.lighter && it.status === "skipped" ? "left out (lighter day)" : it.status;
       if (!it.sets.length) sets.push([s.date, s.title, name, "", "", "", "", it.minutes, status, it.note]);
-      it.sets.forEach((st, j) => sets.push([s.date, s.title, name, j + 1, st.reps, it.kg, it.setting, "", st.done ? status : "not done", it.note]));
+      it.sets.forEach((st, j) => sets.push([s.date, s.title, name, j + 1, st.reps, st.kg ?? it.kg, it.setting, "", st.done ? status : "not done", it.note]));
     }
   }
   const days = [["date", "pain", "energy", "readiness", "rested", ...getPlan().nutrition.habits.map((h) => h.id),

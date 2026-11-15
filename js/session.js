@@ -1,24 +1,21 @@
 // Logging a gym session, swim or walk: exercises, sets, rest timer, autosave, resume, finish with pain and energy.
 import * as db from "./db.js";
-import { getPlan, activity, doseText, colour, picto, parseDate } from "./plan.js";
+import { getPlan, activity, doseText, colour, picto, parseDate, isTimed, sessionItems } from "./plan.js";
 import { esc, toast, celebrate, num, mmss, fmt } from "./ui.js";
 import { beep, unlockAudio } from "./beep.js";
-import { levelFor, swimTarget } from "./progression.js";
+import { swimTarget } from "./progression.js";
 
-const CARDIO = new Set(["warm_up", "cool_down"]);
-
-function newItem(it, level, lv) {
-  const type = CARDIO.has(it.exercise) ? "cardio" : "strength";
-  const sets = type !== "strength" ? null : level === "amber" ? 1 : (lv?.sets ?? it.sets ?? 1);
-  const reps = type === "strength" ? (lv?.reps != null && lv.since ? lv.reps : it.reps) : null;
-  const minutes = level === "amber" && it.amber_minutes ? it.amber_minutes : it.minutes;
-  const planned = { sets, reps, minutes: minutes ?? null, optional: !!it.optional, note: it.note ?? null, setting: !!it.setting };
+// it: a plan item already dosed for the day's level (sessionItems).
+function newItem(it) {
+  const type = isTimed(it.exercise) ? "cardio" : "strength";
+  const sets = type === "strength" ? it.sets ?? 1 : null;
+  const planned = { sets, reps: type === "strength" ? it.reps : null, minutes: it.minutes ?? null, optional: !!it.optional,
+    note: it.note ?? null, setting: !!it.setting };
   planned.dose = doseText(planned);
-  const lighter = level === "amber" && !it.amber;
   return {
-    exercise: it.exercise, type, planned, lighter,
-    sets: type === "strength" ? Array.from({ length: sets }, () => ({ reps: null, done: false })) : [],
-    minutes: null, kg: null, setting: "", note: "", status: lighter ? "skipped" : "todo",
+    exercise: it.exercise, type, planned, lighter: false,
+    sets: type === "strength" ? Array.from({ length: sets }, () => ({ kg: null, reps: null, done: false })) : [],
+    minutes: null, kg: null, setting: "", note: "", status: "todo",
   };
 }
 
@@ -30,11 +27,13 @@ export async function newSession({ act, date, week, level, before, loggedLater =
   if (loggedLater) Object.assign(s, { loggedLater, baseline });
   if (a.kind === "gym") {
     s.items = [];
-    for (const it of a.items) {
-      const item = newItem(it, level, CARDIO.has(it.exercise) ? null : await levelFor(it));
+    for (const it of sessionItems(act, level)) {
+      const item = newItem(it);
       if (it.setting) {
         item.setting = (await db.getSetting(`setting:${it.exercise}`, "")) || "";
+        // Each set starts at last time's weight, so it isn't done from memory.
         item.kg = await db.getSetting(`kg:${it.exercise}`, null);
+        for (const st of item.sets) st.kg = item.kg;
       }
       s.items.push(item);
     }
@@ -61,11 +60,16 @@ async function lastTimes(beforeId, beforeDate) {
   return last;
 }
 
+// Weight of a set: its own, else the exercise's (sessions before 16 Nov 2026 kept one weight per exercise).
+const setKg = (it, st) => st.kg ?? it.kg ?? null;
+
 function lastLine(last) {
   if (!last) return "";
   if (last.type === "cardio") return `Last time: ${last.minutes ?? "–"} min`;
-  const reps = last.sets.filter((x) => x.done).map((x) => x.reps ?? "–").join(", ");
-  return `Last time: ${reps || "–"} reps${last.kg != null ? ` · ${last.kg} kg` : ""}${last.setting ? ` · ${last.setting}` : ""}`;
+  const done = last.sets.filter((x) => x.done);
+  const reps = done.map((x) => x.reps ?? "–").join(", ");
+  const kgs = [...new Set(done.map((x) => setKg(last, x)).filter((v) => v != null))];
+  return `Last time: ${kgs.length ? `${kgs.join("/")} kg × ` : ""}${reps || "–"}${kgs.length ? "" : " reps"}${last.setting ? ` · ${last.setting}` : ""}`;
 }
 
 export function scoreChips(name, scale, selected, attrs = "") {
@@ -114,7 +118,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
   }
 
   const bg = () => colour(S.act);
-  const lighterTag = () => (S.level === "amber" ? ` · <b>lighter version</b>` : "");
+  const lighterTag = () => (S.level === "amber" ? ` · <b>lighter version</b>` : S.level === "red" ? ` · <b>gentle version</b>` : "");
   const when = () => fmt(parseDate(S.date), { weekday: "long", day: "numeric", month: "long" });
 
   function chips(name, idx, values, selected) {
@@ -136,9 +140,12 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       return `<div class="setrow"><span>Minutes</span>
         <input class="in" inputmode="decimal" data-field="minutes" data-i="${i}" value="${item.minutes ?? ""}" placeholder="${esc(item.planned.minutes ?? "")}" aria-label="Minutes"></div>`;
     }
-    return item.sets.map((st, j) => `<div class="setrow ${st.done ? "done" : ""}"><span>Set ${j + 1}</span>
-      <input class="in" inputmode="numeric" data-field="reps" data-i="${i}" data-j="${j}" value="${st.reps ?? ""}" placeholder="${esc(String(item.planned.reps ?? "reps"))} reps" aria-label="Set ${j + 1} reps">
+    // Weighted exercises get a kg box on every set (pre-filled from last time); bodyweight ones log reps only.
+    const rows = item.sets.map((st, j) => `<div class="setrow ${st.done ? "done" : ""}"><span>Set ${j + 1}</span>
+      ${item.planned.setting ? `<input class="in" inputmode="decimal" data-field="kg" data-i="${i}" data-j="${j}" value="${setKg(item, st) ?? ""}" placeholder="kg" aria-label="Set ${j + 1} kg">` : ""}
+      <input class="in" inputmode="numeric" data-field="reps" data-i="${i}" data-j="${j}" value="${st.reps ?? ""}" placeholder="${esc(String(item.planned.reps ?? "reps"))}" aria-label="Set ${j + 1} reps">
       <button type="button" class="tickbtn" data-act="tick" data-i="${i}" data-j="${j}" aria-label="Set ${j + 1} done" aria-pressed="${st.done}">${st.done ? "✓" : "○"}</button></div>`).join("");
+    return `${rows}<button type="button" class="linkbtn" data-act="addset" data-i="${i}">+ Add set</button>`;
   }
 
   function card(item, i) {
@@ -157,8 +164,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
     }
     const lt = last[item.exercise];
     const setting = item.planned.setting
-      ? `<div class="row2b"><label class="mini">Weight (kg)<input class="in" inputmode="decimal" data-field="kg" data-i="${i}" value="${item.kg ?? ""}" placeholder="kg"></label>
-         <label class="mini">Machine setup<input class="in" data-field="setting" data-i="${i}" value="${esc(item.setting)}" placeholder="e.g. seat 4"></label></div>` : "";
+      ? `<label class="mini">Machine / seat setting<input class="in wide" data-field="setting" data-i="${i}" value="${esc(item.setting)}" placeholder="e.g. seat 4"></label>` : "";
     return `<div class="ex open ${item.status}">${head}<div class="ex-body">
       ${item.planned.note ? `<p class="note">${esc(item.planned.note)}</p>` : ""}${howTo(ex)}
       ${lt ? `<p class="last">${esc(lastLine(lt))}</p>` : item.type === "strength" ? `<p class="last">First time: start light, and ask an instructor to check the setup.</p>` : ""}
@@ -192,8 +198,8 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       <button type="button" class="btn finish" data-act="finish">${editing ? "Save changes" : "Finish session"}</button>
       <button type="button" class="linkbtn danger-link" data-act="discard">${editing ? "Delete this session" : "Stop and discard this session"}</button>
       ${rest ? `<div class="restbar" role="timer"><span>Rest <b id="restleft">${mmss(rest.left)}</b></span>
-        <button type="button" data-act="rest+" aria-label="30 seconds more">+30</button>
-        <button type="button" data-act="restskip">Done</button></div>` : ""}`;
+        <button type="button" data-act="rest-" aria-label="15 seconds less">−15</button><button type="button" data-act="rest+" aria-label="15 seconds more">+15</button>
+        <button type="button" data-act="restskip">Skip</button></div>` : ""}`;
   }
 
   // Swim or walk: the guidance, then log it when she's back.
@@ -278,7 +284,13 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       }
       case "skip": item.status = item.status === "skipped" ? "todo" : "skipped"; if (item.status === "skipped") open = null; break;
       case "addback": item.status = "todo"; item.lighter = false; break;
-      case "rest+": if (rest) rest.left += 30; break;
+      case "rest-": if (rest) rest.left = Math.max(5, rest.left - 15); break;
+      case "rest+": if (rest) rest.left += 15; break;
+      case "addset": {
+        const kgs = item.sets.map((x) => setKg(item, x)).filter((v) => v != null);
+        item.sets.push({ kg: kgs.length ? kgs[kgs.length - 1] : item.kg, reps: null, done: false });
+        break;
+      }
       case "restskip": clearInterval(restTimer); rest = null; break;
       case "finish": clearInterval(restTimer); rest = null; finishing = true; break;
       case "unfinish": finishing = false; break;
@@ -293,13 +305,15 @@ export function createSessionView({ $screen, $tabs, onExit }) {
           S.finishedAt = Date.now();
         }
         for (const it of S.items ?? []) {
+          const kgs = (it.sets ?? []).filter((x) => x.done && x.kg != null).map((x) => x.kg);
+          if (kgs.length) it.kg = Math.max(...kgs);
           if (it.setting) await db.setSetting(`setting:${it.exercise}`, it.setting);
           if (it.kg != null) await db.setSetting(`kg:${it.exercise}`, it.kg);
         }
         await save();
         if (!first) toast("Changes saved");
         else if (S.loggedLater) celebrate("Added", "Thanks for logging it. I'll check in on how you're feeling over the next couple of days.");
-        else if (S.level === "amber") celebrate("Logged", "A lighter session is still a real session. Well listened to.");
+        else if (S.level === "amber" || S.level === "red") celebrate("Logged", "A lighter session is still a real session. Well listened to.");
         else celebrate(S.kind === "gym" ? "Session done" : S.kind === "swim" ? "Swim logged" : "Walk logged", "Lovely. Rest up, and let me know how you feel tomorrow.");
         return leave();
       }
@@ -324,6 +338,7 @@ export function createSessionView({ $screen, $tabs, onExit }) {
     else if (f === "mins") { if (S.kind === "gym") S.durationMin = num(el.value); else S.minutes = num(el.value); }
     else if (f === "note") S.items[i].note = el.value;
     else if (f === "setting") S.items[i].setting = el.value;
+    else if (f === "kg" && !Number.isNaN(j)) S.items[i].sets[j].kg = num(el.value);
     else if (f === "kg") S.items[i].kg = num(el.value);
     else if (f === "minutes") S.items[i].minutes = num(el.value);
     else S.items[i].sets[j][f] = num(el.value);

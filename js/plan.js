@@ -2,7 +2,7 @@
 // The weekly schedule is a gentle target: any session can be done on any day, and nothing is ever "owed".
 export const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 export const DAY_NAMES = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
-export const SHORT = { gym_a: "Gym A", gym_b: "Gym B", swim: "Swim", walk: "Walk", recovery: "Rest" };
+export const SHORT = { gym_a: "Lower", gym_b: "Upper", swim: "Swim", walk: "Walk", recovery: "Rest" };
 export const ICONS = { gym_a: "🏋️", gym_b: "🏋️", swim: "🏊", walk: "🌳", recovery: "🛋️" };
 export const colour = (actId) => `var(--${actId})`;
 
@@ -75,16 +75,23 @@ export function weekDates(date) {
   return DAY_KEYS.map((k, i) => ({ key: k, date: addDays(mon, i) }));
 }
 
-// A day's suggested sessions, in order (e.g. Saturday: Gym B, then the swim).
+// A day's suggested sessions, in order (e.g. Saturday: upper body, then an optional swim).
 export const suggestedFor = (dayKey) => plan.schedule.days[dayKey].activities ?? [plan.schedule.days[dayKey].activity];
+export const optionalOn = (dayKey, actId) => (plan.schedule.days[dayKey].optional ?? []).includes(actId);
 export const dayNote = (dayKey) => plan.schedule.days[dayKey].note ?? "";
 export const activity = (actId) => ({ id: actId, ...plan.activities[actId] });
 
-// A session's items for a readiness level. Amber keeps about half: the items marked amber, with shorter times.
+// Warm-ups and cool-downs are timed, not counted in sets.
+export const isTimed = (exId) => ["warm_up", "cool_down"].includes(plan.exercises[exId]?.category);
+
+// A session's items for a readiness level: every exercise, with the level's sets (green 4 × 8, amber 2 × 8,
+// red 1 × 8) and a shorter warm-up on amber and red days. Items an older plan left out on amber still are.
 export function sessionItems(actId, level = "green") {
-  const items = plan.activities[actId].items ?? [];
-  if (level !== "amber") return items.map((it) => ({ ...it }));
-  return items.filter((it) => it.amber).map((it) => ({ ...it, minutes: it.amber_minutes ?? it.minutes }));
+  const items = (plan.activities[actId].items ?? []).filter((it) => level === "green" || it.amber !== false);
+  if (level === "green") return items.map((it) => ({ ...it }));
+  const dose = plan.doses?.[level] ?? plan.doses?.amber;
+  return items.map((it) => (it.sets && dose ? { ...it, sets: dose.sets, reps: dose.reps }
+    : { ...it, minutes: it.amber_minutes ?? it.minutes }));
 }
 
 export function doseText(it) {

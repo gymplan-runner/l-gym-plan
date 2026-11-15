@@ -1,7 +1,8 @@
-// Plan tab: the weekly rhythm, Sessions A and B, swimming, how readiness and progression work,
-// safety, eating habits and the 12-week review. Tapping any exercise opens its guide with a picture.
-import { getPlan, activity, sessionItems, doseText, picto, suggestedFor, dayNote, DAY_KEYS, DAY_NAMES, ICONS, colour } from "./plan.js";
+// Plan tab: her calendar, the weekly rhythm, the lower- and upper-body sessions, swimming, how readiness and
+// progression work, safety, eating habits and the 12-week review. Tapping any exercise opens its guide with a picture.
+import { getPlan, activity, sessionItems, doseText, picto, suggestedFor, dayNote, optionalOn, DAY_KEYS, DAY_NAMES, ICONS, colour } from "./plan.js";
 import { esc } from "./ui.js";
+import { calendarCard } from "./calendar.js";
 import { withLevels, swimTarget } from "./progression.js";
 
 const list = (xs) => `<ul class="small">${xs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
@@ -23,19 +24,20 @@ async function sessionBlock(actId) {
     <div class="session-body">${items.map((it) => row(it, actId)).join("")}</div>`;
 }
 
-export async function renderPlan($screen, hasGuide) {
+export async function renderPlan($screen, hasGuide, events = []) {
   const plan = getPlan();
   const swim = await swimTarget();
   const days = DAY_KEYS.map((k) => {
     const acts = suggestedFor(k);
     const target = (actId) => (actId === "swim" ? `${swim.minutes} min` : activity(actId).max_minutes ? `up to ${activity(actId).max_minutes} min` : activity(actId).focus);
     return acts.map((actId, i) => `<div class="dayrow${i < acts.length - 1 ? " joined" : ""}"><span class="dot" style="background:${actId === "recovery" ? "var(--line)" : colour(actId)}"></span>
-      <b>${i ? "" : DAY_NAMES[k]}</b><span>${i ? "then " : ""}${ICONS[actId]} ${esc(activity(actId).name)}</span><span class="muted small">${esc(target(actId))}</span></div>`).join("")
+      <b>${i ? "" : DAY_NAMES[k]}</b><span>${i ? "then " : ""}${ICONS[actId]} ${esc(activity(actId).name)}${optionalOn(k, actId) ? " (optional)" : ""}</span><span class="muted small">${esc(target(actId))}</span></div>`).join("")
       + (dayNote(k) ? `<p class="muted small daynote">${esc(dayNote(k))}</p>` : "");
   }).join("");
   const lv = plan.readiness.levels;
   $screen.innerHTML = `<h1>Plan</h1>
     ${hasGuide ? `<button type="button" class="btn ghost" data-go="poster">🖼️ One-page picture guide</button>` : ""}
+    ${calendarCard(events)}
     <h2>Your week</h2>
     <div class="card">${days}<p class="muted small" style="margin-top:10px">${plan.schedule.rules.map(esc).join(" ")}</p></div>
     <p class="muted small">Tap any exercise for how to do it.</p>
@@ -51,7 +53,7 @@ export async function renderPlan($screen, hasGuide) {
     <div class="card small"><p>Progress is based on how you recover, not on the calendar. The order is:</p>
       <ol>${plan.progression.sequence.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
       ${list(plan.progression.rules)}
-      <p class="muted">After ${plan.progression.settled_sessions} sessions with good recovery at the same level, the app may suggest one small step. You decide.</p></div>
+      <p class="muted">After ${plan.progression.settled_sessions} green sessions with good recovery, the app may suggest one small step. You decide.</p></div>
     <h2>Staying safe</h2>
     <div class="card small"><p><b>Stop if you notice:</b> ${plan.safety.stop_if.map((x) => esc(x.toLowerCase())).join(", ")}.</p>
       <p><b>Avoid for now:</b> ${plan.safety.avoid.map((x) => esc(x.toLowerCase())).join(", ")}.</p>

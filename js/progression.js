@@ -1,32 +1,27 @@
 // Gentle progression suggestions. The app only suggests; she decides. Based on recovery, never on the calendar.
 //
-// A "settled" session: a green (full) session at the current level, both 24 h and 48 h checks in, no crash.
-// After 3 settled sessions the next step is suggested: more reps (8 → 10 → 12), then a 2nd set
-// (back to 8 reps), then a small increase in resistance on machines. One suggestion at a time,
-// none during a flare or after a recent crash, and never swim time and gym resistance in the same period.
+// A "settled" session: a green (full) session, both 24 h and 48 h checks in, no crash.
+// Gym (from 16 Nov 2026, the instructor's rule): stay at 4 × 8 and, after 3 settled sessions with every set done,
+// suggest the smallest step up in weight on that exercise. One suggestion at a time, none during a flare or after
+// a recent crash, and never swim time and gym resistance in the same period.
 import * as db from "./db.js";
-import { getPlan, parseDate, addDays, isoDate } from "./plan.js";
+import { getPlan, parseDate, addDays, isoDate, isTimed } from "./plan.js";
 import { sessionCrashed } from "./checks.js";
 
 const PERIOD_DAYS = 14;  // "same period" for the swim-vs-resistance rule
-const STEP_REPS = 2, MAX_REPS = 12, MAX_SETS = 2;
-const NO_PROGRESSION = new Set(["warm_up", "cool_down"]);
 
 const levelKey = (ex) => `level:${ex}`;
 
-// Current level for an exercise: what she's confirmed so far, else the plan's starting dose.
+// Current level for an exercise: the plan's dose, and when she last stepped up the weight ("since").
+// Older saved levels (reps and sets steps, before 16 Nov 2026) only keep their date: the dose is the plan's now.
 export async function levelFor(item) {
   const saved = await db.getSetting(levelKey(item.exercise), null);
-  return saved ?? { sets: item.sets ?? 1, reps: topReps(item.reps), since: "" };
+  return { sets: item.sets ?? 1, reps: topReps(item.reps), since: saved?.since ?? "", steps: saved?.steps ?? 0 };
 }
 
-// Plan items with any confirmed levels applied (amber is always 1 set).
-export async function withLevels(items, level) {
-  return Promise.all(items.map(async (it) => {
-    const lv = NO_PROGRESSION.has(it.exercise) ? null : await db.getSetting(levelKey(it.exercise), null);
-    if (!lv) return it;
-    return { ...it, sets: level === "amber" ? 1 : lv.sets, reps: lv.reps };
-  }));
+// Kept for callers: the dose comes from the plan and the day's level (see sessionItems).
+export async function withLevels(items) {
+  return items;
 }
 
 export async function swimTarget() {
@@ -41,19 +36,12 @@ function topReps(reps) {
 const settled = (s) => s.status === "finished" && s.level === "green" && s.checks?.h24 && s.checks?.h48
   && !s.checks.h24.skipped && !s.checks.h48.skipped && !sessionCrashed(s);
 
-function nextStep(lv, item) {
-  if (lv.reps < MAX_REPS) return { ...lv, reps: Math.min(MAX_REPS, lv.reps + STEP_REPS), change: "reps" };
-  if (lv.sets < MAX_SETS) return { ...lv, sets: lv.sets + 1, reps: 8, change: "set" };
-  if (item.setting) return { ...lv, change: "resistance" };
-  return null;
-}
+// Weighted exercises only (machines and cables); bodyweight ones stay as they are.
+const nextStep = (lv, item) => (item.setting ? { ...lv, steps: lv.steps + 1, change: "resistance" } : null);
 
 export function describe(s) {
   if (s.kind === "swim") return `Swim a little longer: about ${s.to.minutes} min instead of ${s.from.minutes} min.`;
-  const name = getPlan().exercises[s.exercise].name;
-  if (s.to.change === "reps") return `${name}: try ${s.to.reps} reps instead of ${s.from.reps}.`;
-  if (s.to.change === "set") return `${name}: try a 2nd set (2 × 8).`;
-  return `${name}: try the next smallest step up in weight or machine setting.`;
+  return `${getPlan().exercises[s.exercise].name}: the last reps have felt easy. Try the smallest step up in weight, still 4 × 8.`;
 }
 
 // The single suggestion to show today, or null.
@@ -72,7 +60,7 @@ export async function suggestion(todayIso, todayLevel) {
   // Gym exercises, in session order.
   for (const actId of ["gym_a", "gym_b"]) {
     for (const item of getPlan().activities[actId].items) {
-      if (NO_PROGRESSION.has(item.exercise)) continue;
+      if (isTimed(item.exercise)) continue;
       const lv = await levelFor(item);
       const count = sessions.filter((s) => s.kind === "gym" && s.date > (lv.since || "") && settled(s)
         && s.items.some((it) => it.exercise === item.exercise && it.status === "done"

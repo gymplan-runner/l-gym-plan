@@ -1,6 +1,6 @@
 import * as db from "./db.js";
 import {
-  loadPlan, getPlan, position, weekDates, suggestedFor, dayNote, activity, sessionItems, doseText, picto,
+  loadPlan, getPlan, position, weekDates, suggestedFor, dayNote, optionalOn, activity, sessionItems, doseText, picto,
   DAY_NAMES, SHORT, ICONS, colour, isoDate, parseDate, dayKeyOf, addDays,
 } from "./plan.js";
 import { renderPlan, openGuide } from "./planview.js";
@@ -14,6 +14,8 @@ import { suggestion, describe, accept, snooze, swimTarget, withLevels } from "./
 import { createSettingsView, needsBackupReminder, backupNow, readBackup, BACKUP_HOW } from "./settings.js";
 import { cycleCard, toughDay } from "./cycle.js";
 import { createActivityView, loadActivities, activityTitle, activityIcon } from "./activity.js";
+import { todayEventsCard, loadEvents, bindCalendar } from "./calendar.js";
+import { bindOwnGoals } from "./owngoals.js";
 
 const $screen = document.getElementById("screen");
 const $tabs = document.getElementById("tabs");
@@ -22,6 +24,8 @@ const sessionView = createSessionView({ $screen, $tabs, onExit: () => show(state
 const settingsView = createSettingsView({ $screen, $tabs });
 const activityView = createActivityView({ $screen, $tabs });
 const viewActive = () => sessionView.active() || settingsView.active() || activityView.active();
+bindCalendar($screen, () => state.tab === "plan" && !viewActive() && !state.flow, () => screens.plan());
+bindOwnGoals($screen, () => state.tab === "progress" && !viewActive() && !state.flow, () => screens.progress());
 const ACTS = ["gym_a", "gym_b", "swim"];
 const LEVELS = ["green", "amber", "red"];
 const FEEL = { min: 1, max: 10, low: "Exhausted or unwell", high: "Full of energy" };
@@ -122,17 +126,14 @@ function itemRow(it, actId) {
     <span class="dose">${esc(doseText(it))}</span><span class="note">${esc(it.note ?? "")}</span></span></button>`;
 }
 
-async function planCard(actId, level = "green") {
+async function planCard(actId, level = "green", optional = false) {
   const a = activity(actId);
   const swim = actId === "swim" ? (level === "amber" ? a.amber_minutes : (await swimTarget()).minutes) : null;
   const sub = [a.focus, a.max_minutes ? `up to ${a.max_minutes} min` : "", swim ? `${swim} min` : ""].filter(Boolean).join(" · ");
-  const head = `<div class="session-head" style="background:${colour(actId)}"><h2>${ICONS[actId]} ${esc(a.name)}</h2><p>${esc(sub)}</p></div>`;
+  const head = `<div class="session-head" style="background:${colour(actId)}"><h2>${ICONS[actId]} ${esc(a.name)}${optional ? ' <span class="tag light-tag">optional</span>' : ""}</h2><p>${esc(sub)}</p></div>`;
   if (a.kind === "gym") {
     const items = await withLevels(sessionItems(actId, level), level);
-    const left = level === "amber" ? sessionItems(actId).filter((it) => !it.amber) : [];
-    const leftNote = left.length
-      ? `<p class="muted small" style="margin:8px 0">Left out today: ${left.map((it) => esc(getPlan().exercises[it.exercise].name)).join(", ")}. You can add any back during the session.</p>` : "";
-    return `${head}<div class="session-body">${items.map((it) => itemRow(it, actId)).join("")}${leftNote}</div>`;
+    return `${head}<div class="session-body">${items.map((it) => itemRow(it, actId)).join("")}</div>`;
   }
   const ex = a.exercise ? getPlan().exercises[a.exercise] : null;
   const body = ex
@@ -148,7 +149,7 @@ function checkCard({ session: s, key }) {
   const id = `${s.id}|${key}`;
   const d = state.drafts[id] ?? {};
   const label = key === "h24" ? "1 day later" : "2 days later";
-  const what = { gym_a: "Gym A session", gym_b: "Gym B session", swim: "swim", walk: "walk" }[s.act];
+  const what = { gym_a: "lower-body session", gym_b: "upper-body session", swim: "swim", walk: "walk" }[s.act];
   return `<div class="card checkcard"><b>How are you feeling after ${esc(dayName(s.date))}'s ${what}?</b>
     <p class="muted small">${label} check. Delayed effects matter most, so this helps you learn your limits.</p>
     <p class="q">Pain</p>${scoreChips("ck-pain", t.pain, d.pain, `data-go="ck-pain" data-ck="${id}"`)}
@@ -156,6 +157,19 @@ function checkCard({ session: s, key }) {
     <input class="in wide" data-cknote="${id}" value="${esc(d.note ?? "")}" placeholder="Anything you noticed? (optional)">
     <div class="row2"><button type="button" class="btn ghost" data-go="ck-skip" data-ck="${id}">Skip</button>
     <button type="button" class="btn" data-go="ck-save" data-ck="${id}">Save</button></div></div>`;
+}
+
+// What she's done this calendar week, in words. No targets: everything counts, nothing reads as falling short.
+async function weekSoFar(now, finished, allDays) {
+  const dates = new Set(weekDates(now).map(({ date }) => isoDate(date)));
+  const inWeek = (d) => dates.has(d);
+  const gym = finished.filter((s) => s.kind === "gym" && inWeek(s.date)).length;
+  const swims = finished.filter((s) => s.kind === "swim" && inWeek(s.date)).length;
+  const rests = allDays.filter((d) => d.rest && inWeek(d.date)).length;
+  const extras = (await loadActivities()).filter((a) => inWeek(a.date)).length;
+  const parts = [gym && `${gym} gym session${gym === 1 ? "" : "s"}`, swims && `${swims} swim${swims === 1 ? "" : "s"}`,
+    extras && `${extras} other activit${extras === 1 ? "y" : "ies"}`, rests && `${rests} rest day${rests === 1 ? "" : "s"}`].filter(Boolean);
+  return parts.length ? `This week: ${parts.join(", ")}` : "This week: a fresh start";
 }
 
 async function renderToday() {
@@ -175,15 +189,25 @@ async function renderToday() {
   const showCrash = crashes.length >= 2 && (await db.getSetting("crashDismissed", "")) !== crashKey;
   const backup = await needsBackupReminder(now);
   state.sug = await suggestion(iso, day.readiness?.level);
-  const sub = pos.status === "before"
+  const headline = pos.status === "before"
     ? `Your 12 weeks start in ${pos.daysToStart} day${pos.daysToStart === 1 ? "" : "s"}`
     : pos.status === "after" ? "12 weeks done: time for your review" : `Week ${pos.week} of ${plan.meta.weeks}`;
   const readiness = day.readiness
     ? `<span class="pill ${day.readiness.level}">${plan.readiness.levels[day.readiness.level].label} today</span>` : "";
+  const todays = suggestedFor(pos.dayKey).filter((a) => a !== "recovery");
+  const doneBanners = [
+    ...doneToday.map((s) => `<div class="done-banner">✓ ${ICONS[s.act]} ${esc(s.title)}${s.level === "amber" ? " · lighter" : s.level === "red" ? " · gentle" : ""}
+      <button type="button" class="linkbtn" data-go="open" data-id="${s.id}">View or edit</button></div>`),
+    ...(await loadActivities()).filter((a) => a.date === iso).map((a) => `<div class="done-banner">✓ ${activityIcon(a)} ${esc(activityTitle(a))}
+      <button type="button" class="linkbtn" data-go="act-open" data-id="${esc(a.id)}">Edit</button></div>`),
+  ].join("");
+  const doBtn = inProgress
+    ? `<button type="button" class="btn big" data-go="open" data-id="${inProgress.id}">▶ Carry on: ${esc(inProgress.title)}</button>`
+    : `<button type="button" class="btn big" data-go="choose">▶ Do a workout</button>`;
   $screen.innerHTML = `
-    <div class="topline"><span class="muted small">${readiness}</span><button type="button" class="gear" data-go="settings" aria-label="Settings">⚙️</button></div>
-    <div class="card hero">${ring(pos.status === "before" ? 0 : pos.week, plan.meta.weeks)}
-      <div><h1>Hi ${esc(state.name)}</h1><div class="muted">${esc(fmt(now, { weekday: "long", day: "numeric", month: "long" }))} · ${sub}</div></div></div>
+    <div class="topline"><p class="muted" style="margin:6px 0 0">${esc(fmt(now, { weekday: "long", day: "numeric", month: "long" }))}</p>
+      <button type="button" class="gear" data-go="settings" aria-label="Settings">⚙️</button></div>
+    <h1>Hi ${esc(state.name)} ${readiness}</h1>
     ${state.checkResult ? `<div class="card ${state.checkResult.crash ? "softwarn" : "softok"}">${state.checkResult.text}</div>` : ""}
     ${showCrash ? `<div class="card softwarn"><b>Recovery has been tough lately</b>
       <p class="small">${crashes.length} sessions in the last two weeks were followed by a noticeable dip. It's okay to ease off: try lighter versions or more rest days for a while.</p>
@@ -192,35 +216,33 @@ async function renderToday() {
     ${backup ? `<div class="card backup"><b>Time for a backup</b><p class="small muted">${esc(backup)} It keeps your logs safe if anything happens to this phone.</p>
       <button type="button" class="btn" data-go="backup">Back up now</button>${BACKUP_HOW}</div>` : ""}
     ${checks.map(checkCard).join("")}
-    ${inProgress ? `<div class="card start-card"><b>You have a ${esc(SHORT[inProgress.act].toLowerCase())} session open</b>
-      <button type="button" class="btn" data-go="open" data-id="${inProgress.id}">Carry on</button></div>` : ""}
     ${state.sug ? `<div class="card sug"><b>💡 Ready for a small step?</b><p>${esc(describe(state.sug))}</p>
       <p class="muted small">You've had ${state.sug.count} settled sessions with good recovery. Only if it feels right. Change one thing at a time.</p>
       <div class="row2"><button type="button" class="btn ghost" data-go="sug-no">Not now</button>
       <button type="button" class="btn" data-go="sug-yes">Yes, try it</button></div></div>` : ""}
-    <button type="button" class="btn big" data-go="choose">▶ Do a workout</button>
-    <button type="button" class="btn ghost" data-go="past">✏️ Log one I've already done</button>
+    <div class="card hero">${ring(pos.status === "before" ? 0 : pos.week, plan.meta.weeks)}
+      <div><div class="hero-head">${esc(headline)}</div>
+      <div class="muted small">${esc(await weekSoFar(now, finished, allDays))}</div></div></div>
+    ${dayStrip(now, new Set(finished.map((s) => s.date)))}
+    ${await todayEventsCard(now)}
+    ${doBtn}
     <button type="button" class="btn ghost" data-go="activity">+ Enter an activity outside the plan</button>
+    ${doneBanners}
+    <h2>${todays.length ? `Suggested for ${DAY_NAMES[pos.dayKey]}` : `${DAY_NAMES[pos.dayKey]}: rest`}</h2>
+    ${dayNote(pos.dayKey) ? `<p class="muted small">${esc(dayNote(pos.dayKey))}</p>` : ""}
+    ${(await Promise.all(suggestedFor(pos.dayKey).map((a) => planCard(a, "green", optionalOn(pos.dayKey, a))))).join("")}
     ${day.rest
       ? `<div class="done-banner">🛋️ Resting today. ${esc(plan.meta.principles.at(-1))}. <button type="button" class="linkbtn" data-go="rest-undo">Undo</button></div>`
       : `<button type="button" class="btn ghost" data-go="rest">🛋️ I'll rest today</button>`}
+    <button type="button" class="btn ghost" data-go="past">✏️ Log one I've already done</button>
     ${cycleCard(allDays, iso, state.cyc)}
-    ${doneToday.map((s) => `<button type="button" class="hist" data-go="open" data-id="${s.id}"><span class="hicon">${ICONS[s.act]}</span>
-      <span class="htxt"><b>${esc(s.title)} ✓</b><span class="muted small">${s.level === "amber" ? "Lighter version · " : ""}tap to view or edit</span></span><span class="chev">›</span></button>`).join("")}
-    ${(await loadActivities()).filter((a) => a.date === iso).map((a) => `<button type="button" class="hist" data-go="act-open" data-id="${esc(a.id)}"><span class="hicon">${activityIcon(a)}</span>
-      <span class="htxt"><b>${esc(activityTitle(a))} ✓</b><span class="muted small">Extra · tap to view or edit</span></span><span class="chev">›</span></button>`).join("")}
-    <h2>This week</h2>
-    ${dayStrip(now, new Set(finished.map((s) => s.date)))}
-    <p class="muted small" style="margin-top:8px">A gentle guide, not a quota. Any session can be done on any day, and rest is always a good choice.</p>
-    <h2>Suggested for ${DAY_NAMES[pos.dayKey]}</h2>
-    ${dayNote(pos.dayKey) ? `<p class="muted small">${esc(dayNote(pos.dayKey))}</p>` : ""}
-    ${(await Promise.all(suggestedFor(pos.dayKey).map((a) => planCard(a)))).join("")}
     <h2>Eating habits <span class="muted small">(optional)</span></h2>
     <div class="card"><p class="muted small">${esc(plan.nutrition.note)}</p>
       ${plan.nutrition.habits.map((h) => {
         const on = !!day.nutrition?.[h.id];
         return `<button type="button" class="habit ${on ? "on" : ""}" data-go="nut" data-h="${h.id}" aria-pressed="${on}"><span>${on ? "✓" : ""}</span>${esc(h.label)}</button>`;
-      }).join("")}</div>`;
+      }).join("")}</div>
+    <button type="button" class="btn ghost" data-go="poster">🖼️ One-page picture guide</button>`;
   state.checkResult = null;
 }
 
@@ -275,18 +297,23 @@ async function renderFlow() {
   }
   // preview
   const lv = plan.readiness.levels[f.level];
-  if (f.level === "red") {
+  // Red: rest first. A gentle 1 × 8 version of a gym session is there if she'd like to move.
+  if (f.level === "red" && !f.gentle) {
     $screen.innerHTML = `${top("Rest is the right call today", `${lv.label}: ${esc(lv.meaning)}`)}
       <div class="card softwarn"><p><b>${esc(lv.action)}</b></p>
         <p class="small">Resting during a flare is part of the plan, not a step back. There's nothing to make up later.</p></div>
       <button type="button" class="btn" data-go="rest">🛋️ Rest today</button>
+      ${a.kind === "gym" ? `<button type="button" class="btn ghost" data-go="gentle">Do a gentle session instead (1 × 8)</button>` : ""}
       <button type="button" class="linkbtn" data-go="flow-back" style="display:block;margin:8px auto">Change my answer</button>`;
     return;
   }
-  $screen.innerHTML = `${top(f.level === "amber" ? "A lighter session today" : "Today's session", `${lv.label}: ${esc(lv.action)}`)}
-    ${f.level === "amber" ? `<div class="light amber small">About half: fewer exercises, 1 set, shorter warm-up. Resting instead is just as good a choice.</div>` : ""}
+  const title = f.level === "amber" ? "A lighter session today" : f.level === "red" ? "A gentle session today" : "Today's session";
+  const sub = f.level === "red" ? "Red: 1 set of 8 of each exercise, a short warm-up" : `${lv.label}: ${esc(lv.action)}`;
+  $screen.innerHTML = `${top(title, sub)}
+    ${f.level === "amber" ? `<div class="light amber small">Every exercise at 2 sets of 8, with a shorter warm-up. Resting instead is just as good a choice.</div>` : ""}
+    ${f.level === "red" ? `<div class="light red small">Just 1 set of each. Stop whenever you've had enough; resting is still the better choice on a red day.</div>` : ""}
     ${await planCard(f.act, f.level)}
-    <button type="button" class="btn big" data-go="start">▶ Start${f.level === "amber" ? " lighter session" : ""}</button>
+    <button type="button" class="btn big" data-go="start">▶ Start${f.level === "amber" ? " lighter session" : f.level === "red" ? " gentle session" : ""}</button>
     <button type="button" class="btn ghost" data-go="rest">🛋️ Rest instead</button>`;
 }
 
@@ -313,7 +340,7 @@ function renderPast(f) {
 // ------------------------------------------------------------------ routing
 const screens = {
   today: renderToday,
-  plan: () => renderPlan($screen, true),
+  plan: async () => renderPlan($screen, true, await loadEvents()),
   progress: () => renderProgress($screen, state.start),
   history: () => renderHistory($screen),
 };
@@ -493,9 +520,11 @@ $screen.addEventListener("click", async (e) => {
   }
   if (go === "flow-exit") return show("today");
   if (go === "flow-back") {
+    if (f.gentle) { f.gentle = false; return renderFlow(); }  // back from the gentle session to the red screen
     state.flow.step = f.step === "preview" ? "ready" : "choose";
     return renderFlow();
   }
+  if (go === "gentle") { f.gentle = true; return renderFlow(); }
   if (go === "pick") {
     const r = (await getDay(todayIso())).readiness;
     state.flow = { step: "ready", act: b.dataset.act, pain: r?.pain ?? null, energy: r?.energy ?? null,
@@ -507,6 +536,7 @@ $screen.addEventListener("click", async (e) => {
   if (go === "r-feel") { f.feeling = f.feeling === Number(v) ? null : Number(v); return renderFlow(); }
   if (go === "r-level") {
     f.level = v;
+    f.gentle = false;
     f.step = "preview";
     const suggested = suggestLevel(f.pain, f.energy, state.usual);
     await updateDay(todayIso(), (d) => {

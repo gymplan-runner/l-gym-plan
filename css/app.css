@@ -250,3 +250,21 @@ details.tbl td, details.tbl th { padding: 5px 4px; border-bottom: 1px solid var(
 /* Activities outside the plan */
 .act-ex b { display: block; margin-bottom: 4px; }
 .act-ex .linkbtn { margin-right: 12px; }
+
+/* Today in the shared layout (16 Nov 2026), calendar events and her own goals */
+.hero-head { font-weight: 700; font-size: 18px; }
+h1 .pill { vertical-align: middle; margin-left: 6px; }
+.tag.light-tag { border-color: rgba(255,255,255,.8); color: #fff; }
+.cal-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding: 4px 0; }
+.cal-form { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 10px; }
+.card.cal-today { border: 2px solid var(--accent); }
+.card.cal-today p { margin: 4px 0; }
+.cal-week { background: var(--soft); }
+.bar { height: 14px; border-radius: 7px; background: var(--line); overflow: hidden; margin: 10px 0 4px; }
+.bar span { display: block; height: 100%; background: var(--accent); border-radius: 7px; min-width: 4px; }
+.step { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); background: none;
+  color: var(--ink); font: inherit; padding: 10px 2px; min-height: 44px; }
+.step > span:first-child { font-weight: 700; color: var(--muted); width: 18px; }
+.step.on > span:first-child { color: var(--accent); }
+.card.owngoal.achieved { border: 2px solid var(--accent); }
+.restbar button[data-act="rest-"] { margin-left: 0; }

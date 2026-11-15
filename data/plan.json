@@ -67,7 +67,10 @@
      "swim"
     ],
     "activity": "gym_b",
-    "note": "Gym first, then the swim.",
+    "note": "Gym first. The swim afterwards is optional, if you've energy left.",
+    "optional": [
+     "swim"
+    ],
     "allow_skip": true,
     "allow_reschedule": true,
     "mandatory": false
@@ -97,55 +100,65 @@
  "activities": {
   "gym_a": {
    "kind": "gym",
-   "name": "Gym: Session A",
-   "focus": "Glutes and core",
-   "max_minutes": 45,
-   "intensity": "Light",
-   "start": "1 set of 8 reps per exercise",
+   "name": "Gym: Lower body",
+   "focus": "Legs and glutes",
+   "max_minutes": 60,
+   "intensity": "Moderate",
+   "start": "4 sets of 8 (amber 2 × 8, red 1 × 8)",
    "items": [
     {
-     "exercise": "warm_up",
-     "minutes": "5-7",
-     "amber_minutes": "3-5",
+     "exercise": "bike_warm_up",
+     "minutes": "10",
+     "amber_minutes": "5",
      "amber": true,
-     "note": "Comfortable pace"
+     "note": "Level 4-6, moderate (easier on a lighter day)"
     },
     {
-     "exercise": "glute_bridge",
-     "sets": 1,
+     "exercise": "belt_squat",
+     "sets": 4,
      "reps": 8,
      "amber": true,
-     "note": "Controlled movement"
-    },
-    {
-     "exercise": "hip_abductor",
-     "sets": 1,
-     "reps": 8,
-     "amber": false,
-     "note": "Light resistance",
+     "note": "Only as deep as feels comfortable",
      "setting": true
     },
     {
      "exercise": "leg_press",
-     "sets": 1,
+     "sets": 4,
      "reps": 8,
-     "amber": false,
-     "note": "Comfortable range of movement",
+     "amber": true,
+     "note": "Don't lock your knees",
      "setting": true
     },
     {
-     "exercise": "abdominal_bracing",
-     "sets": 1,
-     "reps": "5-8",
-     "amber": true,
-     "note": "Gentle core engagement"
-    },
-    {
-     "exercise": "heel_slides",
-     "sets": 1,
+     "exercise": "hip_abductor",
+     "sets": 4,
      "reps": 8,
      "amber": true,
-     "note": "Slow, controlled movement"
+     "note": "Back firmly against the pad",
+     "setting": true
+    },
+    {
+     "exercise": "hip_adductor",
+     "sets": 4,
+     "reps": 8,
+     "amber": true,
+     "note": "Slow and controlled",
+     "setting": true
+    },
+    {
+     "exercise": "glute_press",
+     "sets": 4,
+     "reps": 8,
+     "amber": true,
+     "note": "Feet higher and wide on the plate",
+     "setting": true
+    },
+    {
+     "exercise": "glute_bridge",
+     "sets": 4,
+     "reps": 8,
+     "amber": true,
+     "note": "Controlled movement"
     },
     {
      "exercise": "cool_down",
@@ -158,73 +171,81 @@
   },
   "gym_b": {
    "kind": "gym",
-   "name": "Gym: Session B",
-   "focus": "Legs, stability and upper body",
-   "max_minutes": 45,
-   "intensity": "Light",
-   "start": "1 set of 8 reps per exercise",
+   "name": "Gym: Upper body",
+   "focus": "Chest, shoulders, arms, back and core",
+   "max_minutes": 60,
+   "intensity": "Moderate",
+   "start": "4 sets of 8 (amber 2 × 8, red 1 × 8)",
    "items": [
     {
-     "exercise": "warm_up",
-     "minutes": "5-7",
-     "amber_minutes": "3-5",
+     "exercise": "xtrainer_warm_up",
+     "minutes": "10",
+     "amber_minutes": "5",
      "amber": true,
-     "note": "Comfortable pace"
+     "note": "Moderate (easier on a lighter day)"
     },
     {
-     "exercise": "hamstring_curl",
-     "sets": 1,
+     "exercise": "chest_press",
+     "sets": 4,
      "reps": 8,
      "amber": true,
-     "note": "Light resistance",
+     "note": "Slight bend in your elbows",
      "setting": true
     },
     {
-     "exercise": "calf_raise",
-     "sets": 1,
+     "exercise": "shoulder_press",
+     "sets": 4,
      "reps": 8,
      "amber": true,
-     "note": "Controlled movement"
+     "note": "Light weight. Stop if your shoulders or neck complain",
+     "setting": true
     },
     {
-     "exercise": "hip_abductor",
-     "sets": 1,
+     "exercise": "tricep_pulldown",
+     "sets": 4,
      "reps": 8,
-     "amber": false,
-     "note": "Light resistance",
+     "amber": true,
+     "note": "Elbows tucked in",
      "setting": true
     },
     {
      "exercise": "seated_row",
-     "sets": 1,
+     "sets": 4,
      "reps": 8,
-     "optional": true,
-     "amber": false,
-     "note": "Only if your shoulders tolerate it",
+     "amber": true,
+     "note": "Stop if your shoulders complain",
      "setting": true
     },
     {
      "exercise": "bicep_curl",
-     "sets": 1,
+     "sets": 4,
      "reps": 8,
-     "optional": true,
-     "amber": false,
-     "note": "Optional, only if your wrists tolerate it",
+     "amber": true,
+     "note": "Stop if your wrists complain",
+     "setting": true
+    },
+    {
+     "exercise": "lat_pulldown",
+     "sets": 4,
+     "reps": 8,
+     "amber": true,
+     "note": "Bar to the top of your chest",
+     "setting": true
+    },
+    {
+     "exercise": "face_pull",
+     "sets": 4,
+     "reps": 8,
+     "amber": true,
+     "note": "Light weight, slow",
      "setting": true
     },
     {
      "exercise": "abdominal_bracing",
-     "sets": 1,
-     "reps": "5-8",
+     "sets": 4,
+     "reps": 8,
      "amber": true,
      "note": "Gentle core engagement"
-    },
-    {
-     "exercise": "heel_slides",
-     "sets": 1,
-     "reps": 8,
-     "amber": false,
-     "note": "Slow, controlled movement"
     },
     {
      "exercise": "cool_down",
@@ -587,6 +608,269 @@
    "safety": [
     "Choose even paths if your energy is low."
    ]
+  },
+  "bike_warm_up": {
+   "name": "Bike warm-up",
+   "category": "warm_up",
+   "equipment": [
+    "Exercise bike"
+   ],
+   "what": "Warms you up before the lower-body exercises.",
+   "steps": [
+    "Set the seat so your knee stays slightly bent at the bottom of each turn.",
+    "Pedal for 10 minutes at Level 4-6.",
+    "Moderate effort: breathing a little harder, but you can still talk."
+   ],
+   "tips": [
+    "On a lighter day, 5 minutes at an easy level is plenty."
+   ],
+   "modifications": [
+    "Lower the level.",
+    "Make it shorter if you're tired before you start."
+   ],
+   "safety": [
+    "Stop if you feel dizzy."
+   ]
+  },
+  "xtrainer_warm_up": {
+   "name": "Cross-trainer warm-up",
+   "category": "warm_up",
+   "equipment": [
+    "Cross-trainer"
+   ],
+   "what": "Warms up your arms and legs before the upper-body exercises.",
+   "steps": [
+    "Hold the handles and step on.",
+    "Move at a steady rhythm for 10 minutes.",
+    "Moderate effort: breathing a little harder, but you can still talk."
+   ],
+   "tips": [
+    "On a lighter day, 5 minutes at an easy pace is plenty."
+   ],
+   "modifications": [
+    "Lower the resistance.",
+    "Use the fixed handles if the moving ones bother your shoulders."
+   ],
+   "safety": [
+    "Hold the handles to get on and off.",
+    "Stop if you feel dizzy."
+   ]
+  },
+  "belt_squat": {
+   "name": "Belt squat (machine)",
+   "category": "legs",
+   "equipment": [
+    "Belt squat machine"
+   ],
+   "what": "Strengthens your thighs and glutes with the weight on a belt at your hips, not on your back.",
+   "steps": [
+    "Start light. Ask an instructor to set up the belt and check your stance.",
+    "Push your hips back slightly and drop your hips down between your heels. Keep your heels flat.",
+    "Aim to have your hips in line with glute level at the bottom, only as deep as feels comfortable.",
+    "Drive back up, pushing through the middle of your feet and your heels, to stand."
+   ],
+   "tips": [
+    "Heels stay flat the whole time.",
+    "Breathe out as you stand up."
+   ],
+   "modifications": [
+    "Go less deep.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if it aggravates your knees or back today."
+   ],
+   "safety": [
+    "Only squat as deep as is comfortable.",
+    "Stop if you feel sharp pain in your knees or back."
+   ]
+  },
+  "hip_adductor": {
+   "name": "Hip adductor (machine)",
+   "category": "legs",
+   "equipment": [
+    "Hip adductor machine"
+   ],
+   "what": "Strengthens your inner thighs, which help keep your hips and knees steady.",
+   "steps": [
+    "Start light. Ask an instructor to help set up the machine.",
+    "Sit upright with your back firmly against the back pad, pads on the inside of your knees.",
+    "Keep your core engaged and your spine neutral.",
+    "Move the pads together in a slow and controlled way, then let them open slowly."
+   ],
+   "tips": [
+    "Slow and smooth both ways.",
+    "A smaller range is fine."
+   ],
+   "modifications": [
+    "Start with the pads less wide apart.",
+    "Lower the weight."
+   ],
+   "safety": [
+    "Stop if you feel pulling or pain in your groin or hips."
+   ]
+  },
+  "glute_press": {
+   "name": "Glute press (machine)",
+   "category": "glutes",
+   "equipment": [
+    "Glute press machine"
+   ],
+   "what": "Strengthens your glutes while keeping your thighs' work to a minimum.",
+   "steps": [
+    "Start light. Ask an instructor to help set up the machine.",
+    "Position your foot higher and wide on the foot plate.",
+    "Press the plate back slowly, feeling it in your bottom (glutes) rather than your thighs.",
+    "Let it come back slowly, under control."
+   ],
+   "tips": [
+    "Feet higher and wide is what makes your glutes do the work.",
+    "Breathe out as you press."
+   ],
+   "modifications": [
+    "Use a shorter range of movement.",
+    "Lower the weight."
+   ],
+   "safety": [
+    "Stop if your lower back aches."
+   ]
+  },
+  "chest_press": {
+   "name": "Chest press (machine)",
+   "category": "upper_body",
+   "equipment": [
+    "Chest press machine"
+   ],
+   "what": "Strengthens your chest, shoulders and the back of your arms for pushing things.",
+   "steps": [
+    "Start light. Use the foot bar to bring the handles to the starting position.",
+    "Push forwards without fully locking out your elbows. Always keep a slight bend.",
+    "Come back slowly. Don't let the weight drop all the way down; keep the pressure on your chest.",
+    "When you finish, use the foot bar to return the weight to the start."
+   ],
+   "tips": [
+    "Shoulders down, back against the pad.",
+    "Breathe out as you push."
+   ],
+   "modifications": [
+    "Use a shorter range of movement.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if your shoulders or wrists are sore today."
+   ],
+   "safety": [
+    "Never lock your elbows straight."
+   ]
+  },
+  "shoulder_press": {
+   "name": "Shoulder press (machine)",
+   "category": "upper_body",
+   "equipment": [
+    "Shoulder press machine"
+   ],
+   "what": "Strengthens your shoulders for reaching and lifting overhead.",
+   "steps": [
+    "Start with a light weight. Ask an instructor to check the seat height.",
+    "Push up without fully locking out your elbows. Always keep a slight bend.",
+    "Lower slowly. Don't let the weight drop all the way down; keep the pressure on your shoulders."
+   ],
+   "tips": [
+    "Light weight. Stop if your shoulders or neck complain.",
+    "Breathe out as you push."
+   ],
+   "modifications": [
+    "Push only part of the way up.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if your shoulders or neck are sore today."
+   ],
+   "safety": [
+    "Keep the weight light until the movement feels easy."
+   ]
+  },
+  "tricep_pulldown": {
+   "name": "Tricep pull down (cable)",
+   "category": "upper_body",
+   "equipment": [
+    "Cable machine with a straight bar"
+   ],
+   "what": "Strengthens the back of your arms (triceps).",
+   "steps": [
+    "Attach the straight bar at the top of the cable machine.",
+    "Keep your back straight and your chest up, elbows by your sides.",
+    "Pull the bar down until your arms are straight.",
+    "Let it come back up slowly, about halfway, and repeat."
+   ],
+   "tips": [
+    "Only your forearms move. Elbows stay tucked in."
+   ],
+   "modifications": [
+    "Lower the weight.",
+    "Use a rope instead of the bar if your wrists prefer it."
+   ],
+   "contraindications": [
+    "Skip it if your elbows or wrists are sore today."
+   ],
+   "safety": [
+    "Stop if your elbows hurt."
+   ]
+  },
+  "lat_pulldown": {
+   "name": "Lat pull down (machine)",
+   "category": "upper_body",
+   "equipment": [
+    "Lat pull down machine"
+   ],
+   "what": "Strengthens the sides of your back, which supports your posture.",
+   "steps": [
+    "Adjust the seat pad so it's snug against your thighs.",
+    "Hold the bar a little wider than your shoulders.",
+    "Lean back very slightly, keeping your spine neutral, and pull the bar down to the top of your chest.",
+    "Squeeze your shoulder blades together, then let the bar go up slowly."
+   ],
+   "tips": [
+    "Shoulders down, away from your ears.",
+    "Breathe out as you pull."
+   ],
+   "modifications": [
+    "Use a shorter range of movement.",
+    "Lower the weight."
+   ],
+   "contraindications": [
+    "Skip it if your shoulders or neck are sore today."
+   ],
+   "safety": [
+    "Never pull the bar behind your head."
+   ]
+  },
+  "face_pull": {
+   "name": "Face pulls (cable)",
+   "category": "upper_body",
+   "equipment": [
+    "Cable machine with a rope"
+   ],
+   "what": "Strengthens your upper back and the backs of your shoulders, for good posture.",
+   "steps": [
+    "Attach the rope to the cable at around face height.",
+    "Hold the rope with your palms facing each other and step back, arms straight in front of you.",
+    "Keep your chest up and core tight. Pull the rope towards your face, letting your elbows flare out, until your hands are beside your ears.",
+    "Return slowly, straightening your arms under control."
+   ],
+   "tips": [
+    "Light weight. This is about control, not strength."
+   ],
+   "modifications": [
+    "Lower the weight.",
+    "Make the movement smaller."
+   ],
+   "contraindications": [
+    "Skip it if your shoulders or neck are sore today."
+   ],
+   "safety": [
+    "Stop if it pinches in your shoulders."
+   ]
   }
  },
  "readiness": {
@@ -595,17 +879,17 @@
    "green": {
     "label": "Green",
     "meaning": "Feeling reasonably well",
-    "action": "Do the planned easy session."
+    "action": "Do the full session: every exercise at 4 sets of 8."
    },
    "amber": {
     "label": "Amber",
     "meaning": "More pain or fatigue than usual",
-    "action": "Do a lighter version (about half), or rest."
+    "action": "Do every exercise at 2 sets of 8, with a shorter warm-up, or rest."
    },
    "red": {
     "label": "Red",
     "meaning": "Flare, significant exhaustion or poor recovery",
-    "action": "Rest. There's nothing to catch up on."
+    "action": "Rest. There's nothing to catch up on. If you'd like to move, a gentle 1 set of 8 is fine."
    }
   },
   "thresholds": {
@@ -620,13 +904,25 @@
   },
   "override": "You can always choose rest instead, whatever the colour."
  },
+ "doses": {
+  "green": {
+   "sets": 4,
+   "reps": 8
+  },
+  "amber": {
+   "sets": 2,
+   "reps": 8
+  },
+  "red": {
+   "sets": 1,
+   "reps": 8
+  }
+ },
  "progression": {
   "sequence": [
-   "Get comfortable with the movement and how you recover",
-   "Repeat the starting routine when you tolerate it",
-   "Consider adding a few reps",
-   "Consider adding a second set",
-   "Only then consider a small increase in resistance"
+   "4 sets of 8 on a green day",
+   "When the last rep feels easy, over 3 settled sessions, consider the smallest step up in weight",
+   "One exercise at a time"
   ],
   "settled_sessions": 3,
   "rules": [
@@ -646,8 +942,8 @@
    "Symptoms getting significantly worse"
   ],
   "avoid": [
-   "Heavy overhead pressing",
-   "Deep squats",
+   "Heavy weights before the movement feels easy",
+   "Squatting deeper than is comfortable",
    "Planks (at first)"
   ],
   "general": [

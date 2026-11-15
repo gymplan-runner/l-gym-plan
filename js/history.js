@@ -14,7 +14,7 @@ function recovery(s) {
 }
 
 function detail(s) {
-  const lighter = s.level === "amber" ? "Lighter version · " : "";
+  const lighter = s.level === "amber" ? "Lighter version · " : s.level === "red" ? "Gentle version · " : "";
   if (s.kind === "gym") {
     const n = s.items.filter((i) => i.status === "done").length;
     return `${lighter}${n} exercise${n === 1 ? "" : "s"}${s.durationMin ? ` · ${s.durationMin} min` : ""}`;

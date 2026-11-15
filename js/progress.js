@@ -1,13 +1,14 @@
 // Progress tab: what she's done, swim time, exercises getting easier, pain and energy, recovery,
 // eating habits, and optional body measures. Real entries only, and never framed as a quota.
 import * as db from "./db.js";
-import { getPlan, parseDate, addDays, isoDate, position, sessionItems } from "./plan.js";
+import { getPlan, parseDate, addDays, isoDate, position, sessionItems, isTimed } from "./plan.js";
 import { esc, fmt, toast, num, today } from "./ui.js";
 import { lineChart } from "./charts.js";
 import { sessionCrashed, baselineOf } from "./checks.js";
 import { levelFor, swimTarget } from "./progression.js";
 import { patternsSection } from "./cycle.js";
 import { loadActivities, activityTitle, activityIcon, activityDetail } from "./activity.js";
+import { ownGoalsSection } from "./owngoals.js";
 
 // Activities outside the plan: shown as extras, never counted as plan sessions.
 async function extrasSection() {
@@ -71,23 +72,23 @@ async function strengthSection(sessions) {
   const rows = [];
   for (const actId of ["gym_a", "gym_b"]) {
     for (const it of sessionItems(actId)) {
-      if (["warm_up", "cool_down"].includes(it.exercise) || seen.has(it.exercise)) continue;
+      if (isTimed(it.exercise) || seen.has(it.exercise)) continue;
       seen.add(it.exercise);
       const lv = await levelFor(it);
       const done = sessions.filter((s) => s.kind === "gym").flatMap((s) => s.items.filter((i) => i.exercise === it.exercise && i.status === "done").map((i) => ({ ...i, date: s.date })))
         .sort((a, b) => (a.date < b.date ? -1 : 1));
       const kgs = done.filter((i) => i.kg != null);
-      const startDose = `${it.sets} × ${it.reps}`;
-      const now = lv.since ? `${lv.sets} × ${lv.reps}` : startDose;
-      const kg = kgs.length ? (kgs.length > 1 && kgs[0].kg !== kgs.at(-1).kg ? `${kgs[0].kg} → ${kgs.at(-1).kg} kg` : `${kgs.at(-1).kg} kg`) : "";
-      rows.push(`<tr><td>${esc(plan.exercises[it.exercise].name)}</td><td>${esc(startDose)}</td>
-        <td>${lv.since ? `<b>${esc(now)}</b> ✓` : esc(now)}${kg ? `<br><span class="muted small">${esc(kg)}</span>` : ""}</td><td>${done.length}</td></tr>`);
+      const first = kgs.length ? `${kgs[0].kg} kg` : "–";
+      const now = kgs.length ? `${kgs.at(-1).kg} kg` : "–";
+      const up = lv.steps > 0 && kgs.length > 1 && kgs.at(-1).kg > kgs[0].kg;
+      rows.push(`<tr><td>${esc(plan.exercises[it.exercise].name)}</td><td>${esc(first)}</td>
+        <td>${up ? `<b>${esc(now)}</b> ✓` : esc(now)}</td><td>${done.length}</td></tr>`);
     }
   }
   const stepped = rows.filter((r) => r.includes("✓")).length;
   return `<h2>Exercises getting easier</h2><div class="card">
-    <p class="small">${stepped ? `You've taken ${stepped} small step${stepped === 1 ? "" : "s"} up. Each one came after good recovery.` : "No steps up yet, and that's fine. Repeating the starting routine comfortably is progress."}</p>
-    <table class="quad"><tr><th>Exercise</th><th>Started</th><th>Now</th><th>Times</th></tr>${rows.join("")}</table></div>`;
+    <p class="small">${stepped ? `You've stepped up the weight on ${stepped} exercise${stepped === 1 ? "" : "s"}. Each step came after good recovery.` : "No steps up in weight yet, and that's fine. Repeating 4 × 8 comfortably is progress."}</p>
+    <table class="quad"><tr><th>Exercise</th><th>First</th><th>Latest</th><th>Times</th></tr>${rows.join("")}</table></div>`;
 }
 
 function feelSection(sessions) {
@@ -178,6 +179,7 @@ export async function renderProgress($screen, start) {
   $screen.innerHTML = `<h1>Progress</h1>
     <p class="muted small">Success here means taking part in a way you can keep up, and recovering well. It doesn't mean doing every session.</p>
     ${totals(sessions, days, now)}
+    ${await ownGoalsSection()}
     ${await extrasSection()}
     ${await swimSection(sessions)}
     ${await strengthSection(sessions)}
