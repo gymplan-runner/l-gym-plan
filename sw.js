@@ -5,10 +5,10 @@
 // named "lgym-…". Another app's service worker may still delete ours; if that happens, the
 // fetch handler and the page's "recache" message rebuild it.
 const PREFIX = "lgym-";
-const VERSION = `${PREFIX}v5`;
+const VERSION = `${PREFIX}v6`;
 const FILES = [
   "./", "index.html", "manifest.webmanifest", "css/app.css",
-  "js/app.js", "js/db.js", "js/plan.js", "js/ui.js", "js/beep.js", "js/checks.js", "js/cycle.js",
+  "js/app.js", "js/db.js", "js/plan.js", "js/ui.js", "js/beep.js", "js/checks.js", "js/cycle.js", "js/activity.js",
   "js/session.js", "js/progression.js", "js/settings.js",
   "js/planview.js", "js/progress.js", "js/history.js", "js/charts.js",
   "data/plan.json", "data/pictos.json", "img/guide.jpg",

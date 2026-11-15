@@ -246,3 +246,7 @@ details.tbl table { width: 100%; border-collapse: collapse; font-size: 14px; }
 details.tbl td, details.tbl th { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
 .hdate { font-size: 15px; color: var(--muted); margin: 16px 0 6px; }
 .restbar button { min-width: 56px; min-height: 44px; border: 0; border-radius: 10px; background: rgba(255,255,255,.2); color: #fff; font: inherit; font-weight: 700; }
+
+/* Activities outside the plan */
+.act-ex b { display: block; margin-bottom: 4px; }
+.act-ex .linkbtn { margin-right: 12px; }

@@ -4,6 +4,7 @@ import * as db from "./db.js";
 import { getPlan, parseDate, ICONS } from "./plan.js";
 import { esc, fmt } from "./ui.js";
 import { sessionCrashed } from "./checks.js";
+import { loadActivities, activityTitle, activityIcon, activityDetail } from "./activity.js";
 
 function recovery(s) {
   if (sessionCrashed(s)) return `<span class="pill amber">Dip after</span>`;
@@ -34,10 +35,14 @@ export async function renderHistory($screen) {
       <span class="hicon" aria-hidden="true">🛋️</span>
       <span class="htxt"><b>Rest day</b><span class="muted small">${esc(plan.meta.principles.at(-1))}</span></span>
       ${d.readiness ? `<span class="pill ${d.readiness.level}">${plan.readiness.levels[d.readiness.level].label}</span>` : ""}</div>` })),
+    ...(await loadActivities()).map((a) => ({ date: a.date, html: `<button type="button" class="hist" data-go="act-open" data-id="${esc(a.id)}">
+      <span class="hicon" aria-hidden="true">${activityIcon(a)}</span>
+      <span class="htxt"><b>${esc(activityTitle(a))}</b><span class="muted small">${esc(activityDetail(a))}</span></span>
+      <span class="chev" aria-hidden="true">›</span></button>` })),
   ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
   if (!rows.length) {
-    $screen.innerHTML = `<h1>History</h1><div class="card empty">Nothing logged yet. Your sessions, swims, walks and rest days will appear here. Tap any session to correct it.</div>`;
+    $screen.innerHTML = `<h1>History</h1><div class="card empty">Nothing logged yet. Your sessions, swims, walks, other activities and rest days will appear here. Tap any session to correct it.</div>`;
     return;
   }
   let lastDate = "";

@@ -2,6 +2,7 @@
 import * as db from "./db.js";
 import { getPlan, isoDate } from "./plan.js";
 import { esc, toast, fmt } from "./ui.js";
+import { loadActivities, activityTitle } from "./activity.js";
 import { scoreChips } from "./session.js";
 
 const APP_ID = "l-gym-plan";
@@ -74,8 +75,18 @@ export async function exportCsv() {
       ...getPlan().nutrition.habits.map((h) => (d.nutrition?.[h.id] ? "yes" : "")),
       d.readiness?.feeling, d.readiness?.note, d.cycle?.flow, (d.cycle?.symptoms ?? []).join(" "), d.cycle?.note]);
   }
+  // Activities outside the plan: one row per set, or one row if no exercises were entered.
+  const acts = [["date", "type", "name", "minutes", "pain_after", "energy_after", "note", "exercise", "set", "kg", "reps"]];
+  for (const a of await loadActivities()) {
+    const base = [a.date, a.type, activityTitle(a), a.minutes, a.pain, a.energy, a.note];
+    if (!a.items?.length) acts.push(base);
+    for (const it of a.items ?? []) {
+      const name = it.exercise ? ex[it.exercise]?.name ?? it.exercise : it.name;
+      it.sets.forEach((st, j) => acts.push([...base, name, j + 1, st.kg, st.reps]));
+    }
+  }
   const d = stamp();
-  const files = [["sessions", summary], ["exercises", sets], ["days", days]]
+  const files = [["sessions", summary], ["exercises", sets], ["days", days], ["activities", acts]]
     .map(([n, rows]) => new File([`﻿${csv(rows)}`], `${n}-${d}.csv`, { type: "text/csv" }));
   if (await saveFiles(files)) toast("Spreadsheet files exported");
 }
@@ -93,7 +104,7 @@ export function readBackup(file) {
 
 export async function needsBackupReminder(now = new Date()) {
   const last = await db.getSetting("lastBackup", null);
-  const logged = (await db.all("sessions")).length;
+  const logged = (await db.all("sessions")).length + (await loadActivities()).length;
   if (!logged) return null;
   if (!last) return "You haven't saved a backup yet.";
   const days = Math.floor((now - new Date(last)) / 86400000);

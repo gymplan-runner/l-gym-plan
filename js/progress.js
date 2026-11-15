@@ -7,6 +7,16 @@ import { lineChart } from "./charts.js";
 import { sessionCrashed, baselineOf } from "./checks.js";
 import { levelFor, swimTarget } from "./progression.js";
 import { patternsSection } from "./cycle.js";
+import { loadActivities, activityTitle, activityIcon, activityDetail } from "./activity.js";
+
+// Activities outside the plan: shown as extras, never counted as plan sessions.
+async function extrasSection() {
+  const acts = (await loadActivities()).sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (!acts.length) return "";
+  return `<h2>Extra activities</h2><div class="card"><p><b>${acts.length}</b> logged outside the plan. It all counts.</p>
+    ${acts.slice(0, 8).map((a) => `<p class="small">${fmt(parseDate(a.date), { day: "numeric", month: "short" })} · ${activityIcon(a)} <b>${esc(activityTitle(a))}</b>
+      <span class="muted">${esc(activityDetail(a).replace(/ · extra$/, ""))}</span></p>`).join("")}</div>`;
+}
 
 const avg = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
 
@@ -168,6 +178,7 @@ export async function renderProgress($screen, start) {
   $screen.innerHTML = `<h1>Progress</h1>
     <p class="muted small">Success here means taking part in a way you can keep up, and recovering well. It doesn't mean doing every session.</p>
     ${totals(sessions, days, now)}
+    ${await extrasSection()}
     ${await swimSection(sessions)}
     ${await strengthSection(sessions)}
     ${feelSection(sessions)}

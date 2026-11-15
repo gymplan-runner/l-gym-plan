@@ -13,13 +13,15 @@ import { createSessionView, newSession, scoreChips } from "./session.js";
 import { suggestion, describe, accept, snooze, swimTarget, withLevels } from "./progression.js";
 import { createSettingsView, needsBackupReminder, backupNow, readBackup, BACKUP_HOW } from "./settings.js";
 import { cycleCard, toughDay } from "./cycle.js";
+import { createActivityView, loadActivities, activityTitle, activityIcon } from "./activity.js";
 
 const $screen = document.getElementById("screen");
 const $tabs = document.getElementById("tabs");
 const state = { tab: "today", name: "", start: null, usual: null, flow: null, drafts: {}, sug: null, cyc: null };
 const sessionView = createSessionView({ $screen, $tabs, onExit: () => show(state.tab) });
 const settingsView = createSettingsView({ $screen, $tabs });
-const viewActive = () => sessionView.active() || settingsView.active();
+const activityView = createActivityView({ $screen, $tabs });
+const viewActive = () => sessionView.active() || settingsView.active() || activityView.active();
 const ACTS = ["gym_a", "gym_b", "swim"];
 const LEVELS = ["green", "amber", "red"];
 const FEEL = { min: 1, max: 10, low: "Exhausted or unwell", high: "Full of energy" };
@@ -198,12 +200,15 @@ async function renderToday() {
       <button type="button" class="btn" data-go="sug-yes">Yes, try it</button></div></div>` : ""}
     <button type="button" class="btn big" data-go="choose">▶ Do a workout</button>
     <button type="button" class="btn ghost" data-go="past">✏️ Log one I've already done</button>
+    <button type="button" class="btn ghost" data-go="activity">+ Enter an activity outside the plan</button>
     ${day.rest
       ? `<div class="done-banner">🛋️ Resting today. ${esc(plan.meta.principles.at(-1))}. <button type="button" class="linkbtn" data-go="rest-undo">Undo</button></div>`
       : `<button type="button" class="btn ghost" data-go="rest">🛋️ I'll rest today</button>`}
     ${cycleCard(allDays, iso, state.cyc)}
     ${doneToday.map((s) => `<button type="button" class="hist" data-go="open" data-id="${s.id}"><span class="hicon">${ICONS[s.act]}</span>
       <span class="htxt"><b>${esc(s.title)} ✓</b><span class="muted small">${s.level === "amber" ? "Lighter version · " : ""}tap to view or edit</span></span><span class="chev">›</span></button>`).join("")}
+    ${(await loadActivities()).filter((a) => a.date === iso).map((a) => `<button type="button" class="hist" data-go="act-open" data-id="${esc(a.id)}"><span class="hicon">${activityIcon(a)}</span>
+      <span class="htxt"><b>${esc(activityTitle(a))} ✓</b><span class="muted small">Extra · tap to view or edit</span></span><span class="chev">›</span></button>`).join("")}
     <h2>This week</h2>
     ${dayStrip(now, new Set(finished.map((s) => s.date)))}
     <p class="muted small" style="margin-top:8px">A gentle guide, not a quota. Any session can be done on any day, and rest is always a good choice.</p>
@@ -413,6 +418,12 @@ $screen.addEventListener("click", async (e) => {
   const f = state.flow;
   const v = b.dataset.v;
   if (go === "upain" || go === "uenergy") return welcomeChip(b);
+  if (go === "activity") return activityView.start(null, () => show(state.tab));
+  if (go === "act-open") {
+    const rec = (await loadActivities()).find((a) => a.id === b.dataset.id);
+    if (rec) return activityView.start(rec, () => show(state.tab));
+    return;
+  }
   if (go === "guide") return openGuide(b.dataset.ex, b.dataset.act);
   if (go === "poster") return openPoster();
   if (go.startsWith("body-")) {
