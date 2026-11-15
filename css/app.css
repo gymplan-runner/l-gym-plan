@@ -133,6 +133,8 @@ textarea.in { font-size: 16px; }
 .filebtn { display: flex; align-items: center; justify-content: center; text-align: center; margin-top: 12px; cursor: pointer; }
 
 /* ---------- readiness */
+.cycle .cyc-head { display: flex; justify-content: space-between; align-items: center; }
+.cycle .chips:not(.pick) .chip { padding: 0 12px; }
 .light { border-radius: 12px; padding: 10px 12px; margin: 12px 0; font-size: 15px; }
 .light.green { background: var(--greenbg); } .light.amber { background: var(--amberbg); } .light.red { background: var(--redbg); }
 .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

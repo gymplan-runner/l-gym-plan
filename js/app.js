@@ -12,15 +12,17 @@ import { getDay, updateDay, suggestLevel, pendingChecks, recentCrashes, isCrash,
 import { createSessionView, newSession, scoreChips } from "./session.js";
 import { suggestion, describe, accept, snooze, swimTarget, withLevels } from "./progression.js";
 import { createSettingsView, needsBackupReminder, backupNow, readBackup, BACKUP_HOW } from "./settings.js";
+import { cycleCard, toughDay } from "./cycle.js";
 
 const $screen = document.getElementById("screen");
 const $tabs = document.getElementById("tabs");
-const state = { tab: "today", name: "", start: null, usual: null, flow: null, drafts: {}, sug: null };
+const state = { tab: "today", name: "", start: null, usual: null, flow: null, drafts: {}, sug: null, cyc: null };
 const sessionView = createSessionView({ $screen, $tabs, onExit: () => show(state.tab) });
 const settingsView = createSettingsView({ $screen, $tabs });
 const viewActive = () => sessionView.active() || settingsView.active();
 const ACTS = ["gym_a", "gym_b", "swim"];
 const LEVELS = ["green", "amber", "red"];
+const FEEL = { min: 1, max: 10, low: "Exhausted or unwell", high: "Full of energy" };
 
 const todayIso = () => isoDate(today());
 const weekOf = (iso) => {
@@ -161,6 +163,7 @@ async function renderToday() {
   const pos = position(now, state.start);
   const sessions = await db.all("sessions");
   const day = await getDay(iso);
+  const allDays = await db.all("days");
   const finished = sessions.filter((s) => s.status === "finished");
   const doneToday = finished.filter((s) => s.date === iso);
   const inProgress = sessions.find((s) => s.status === "in_progress");
@@ -198,6 +201,7 @@ async function renderToday() {
     ${day.rest
       ? `<div class="done-banner">🛋️ Resting today. ${esc(plan.meta.principles.at(-1))}. <button type="button" class="linkbtn" data-go="rest-undo">Undo</button></div>`
       : `<button type="button" class="btn ghost" data-go="rest">🛋️ I'll rest today</button>`}
+    ${cycleCard(allDays, iso, state.cyc)}
     ${doneToday.map((s) => `<button type="button" class="hist" data-go="open" data-id="${s.id}"><span class="hicon">${ICONS[s.act]}</span>
       <span class="htxt"><b>${esc(s.title)} ✓</b><span class="muted small">${s.level === "amber" ? "Lighter version · " : ""}tap to view or edit</span></span><span class="chev">›</span></button>`).join("")}
     <h2>This week</h2>
@@ -245,14 +249,18 @@ async function renderFlow() {
   if (f.step === "ready") {
     const t = plan.tracking;
     const sug = suggestLevel(f.pain, f.energy, state.usual);
+    const tough = toughDay(await getDay(todayIso()));
     $screen.innerHTML = `${top("How are you right now?", `${ICONS[f.act]} ${esc(a.name)}`)}
       <div class="card">
         <p class="q">Pain right now</p>${scoreChips("r-pain", t.pain, f.pain, 'data-go="r-pain"')}
         <p class="q">Energy right now</p>${scoreChips("r-energy", t.energy, f.energy, 'data-go="r-energy"')}
         ${state.usual ? `<p class="muted small">Your usual day: pain ${state.usual.pain}, energy ${state.usual.energy}.</p>` : ""}
+        <p class="q">Overall, how are you feeling today? <span class="muted small">(optional)</span></p>${scoreChips("r-feel", FEEL, f.feeling, 'data-go="r-feel"')}
+        <input class="in wide" id="r-note" value="${esc(f.feelNote ?? "")}" placeholder="Note (optional)" style="margin-top:10px">
       </div>
       ${sug ? `<div class="light ${sug}"><b>Suggested: ${plan.readiness.levels[sug].label}</b>. ${esc(plan.readiness.levels[sug].meaning)}.
         <br><span class="small">${esc(plan.readiness.levels[sug].action)}</span></div>
+        ${sug === "green" && tough ? `<div class="light amber small">You've logged heavy flow or cramps today, so the lighter (amber) version is a good choice today. You decide.</div>` : ""}
         <p class="q">How does today feel to you?</p>
         <div class="levels">${LEVELS.map((l) => `<button type="button" class="lvl ${l} ${l === sug ? "sugd" : ""}" data-go="r-level" data-v="${l}">
           ${plan.readiness.levels[l].label}${l === sug ? "<small>suggested</small>" : ""}</button>`).join("")}</div>
@@ -345,6 +353,32 @@ async function takeRest() {
   return show("today");
 }
 
+// Cycle card on Today: open, pick the day / flow / symptoms, save or remove.
+async function cycleAction(go, v) {
+  const load = async (iso) => {
+    const c = (await getDay(iso)).cycle ?? {};
+    state.cyc = { date: iso, flow: c.flow ?? null, symptoms: [...(c.symptoms ?? [])], note: c.note ?? "" };
+  };
+  const c = state.cyc;
+  if (go === "cyc-open") await load(todayIso());
+  else if (go === "cyc-date") await load(v);
+  else if (go === "cyc-flow") c.flow = c.flow === v ? null : v;
+  else if (go === "cyc-sym") c.symptoms = c.symptoms.includes(v) ? c.symptoms.filter((x) => x !== v) : [...c.symptoms, v];
+  else if (go === "cyc-cancel") state.cyc = null;
+  else if (go === "cyc-save" || go === "cyc-clear") {
+    const empty = go === "cyc-clear" || (!c.flow && !c.symptoms.length && !c.note.trim());
+    await updateDay(c.date, (d) => {
+      if (empty) delete d.cycle;
+      else d.cycle = { ...(c.flow ? { flow: c.flow } : {}), symptoms: c.symptoms, ...(c.note.trim() ? { note: c.note.trim() } : {}) };
+    });
+    toast(empty ? "Entry removed" : "Saved");
+    state.cyc = null;
+  }
+  const y = window.scrollY;
+  await renderToday();
+  window.scrollTo(0, y);
+}
+
 async function saveCheck(b, skipped) {
   const [id, key] = b.dataset.ck.split("|");
   const s = await db.get("sessions", id);
@@ -364,6 +398,8 @@ async function saveCheck(b, skipped) {
 
 $screen.addEventListener("input", (e) => {
   if (e.target.id === "p-date" && state.flow?.step === "past") state.flow.date = e.target.value;
+  if (e.target.id === "r-note" && state.flow) state.flow.feelNote = e.target.value;
+  if (e.target.id === "cyc-note" && state.cyc) state.cyc.note = e.target.value;
   const el = e.target.closest("[data-cknote]");
   if (el) state.drafts[el.dataset.cknote] = { ...state.drafts[el.dataset.cknote], note: el.value };
 });
@@ -415,6 +451,7 @@ $screen.addEventListener("click", async (e) => {
     return window.scrollTo(0, y);
   }
   if (go === "ck-save" || go === "ck-skip") return saveCheck(b, go === "ck-skip");
+  if (go.startsWith("cyc-")) return cycleAction(go, v);
   if (go === "sug-yes") {
     await accept(state.sug, todayIso());
     toast("Updated. You'll see it next time.");
@@ -450,16 +487,21 @@ $screen.addEventListener("click", async (e) => {
   }
   if (go === "pick") {
     const r = (await getDay(todayIso())).readiness;
-    state.flow = { step: "ready", act: b.dataset.act, pain: r?.pain ?? null, energy: r?.energy ?? null };
+    state.flow = { step: "ready", act: b.dataset.act, pain: r?.pain ?? null, energy: r?.energy ?? null,
+      feeling: r?.feeling ?? null, feelNote: r?.note ?? "" };
     return renderFlow();
   }
   if (go === "r-pain") { f.pain = Number(v); return renderFlow(); }
   if (go === "r-energy") { f.energy = Number(v); return renderFlow(); }
+  if (go === "r-feel") { f.feeling = f.feeling === Number(v) ? null : Number(v); return renderFlow(); }
   if (go === "r-level") {
     f.level = v;
     f.step = "preview";
     const suggested = suggestLevel(f.pain, f.energy, state.usual);
-    await updateDay(todayIso(), (d) => { d.readiness = { pain: f.pain, energy: f.energy, suggested, level: v, at: Date.now() }; });
+    await updateDay(todayIso(), (d) => {
+      d.readiness = { pain: f.pain, energy: f.energy, suggested, level: v, at: Date.now(),
+        ...(f.feeling != null ? { feeling: f.feeling } : {}), ...(f.feelNote ? { note: f.feelNote } : {}) };
+    });
     return renderFlow();
   }
   if (go === "start") {

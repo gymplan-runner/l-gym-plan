@@ -6,6 +6,7 @@ import { esc, fmt, toast, num, today } from "./ui.js";
 import { lineChart } from "./charts.js";
 import { sessionCrashed, baselineOf } from "./checks.js";
 import { levelFor, swimTarget } from "./progression.js";
+import { patternsSection } from "./cycle.js";
 
 const avg = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
 
@@ -170,6 +171,7 @@ export async function renderProgress($screen, start) {
     ${await swimSection(sessions)}
     ${await strengthSection(sessions)}
     ${feelSection(sessions)}
+    ${patternsSection(days)}
     ${recoverySection(sessions)}
     ${habitsSection(days, now)}
     ${await bodySection(start)}`;

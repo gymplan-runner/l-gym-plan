@@ -67,10 +67,12 @@ export async function exportCsv() {
       it.sets.forEach((st, j) => sets.push([s.date, s.title, name, j + 1, st.reps, it.kg, it.setting, "", st.done ? status : "not done", it.note]));
     }
   }
-  const days = [["date", "pain", "energy", "readiness", "rested", ...getPlan().nutrition.habits.map((h) => h.id)]];
+  const days = [["date", "pain", "energy", "readiness", "rested", ...getPlan().nutrition.habits.map((h) => h.id),
+    "feeling", "feeling_note", "period_flow", "cycle_symptoms", "cycle_note"]];
   for (const d of (await db.all("days")).sort((a, b) => (a.date < b.date ? -1 : 1))) {
     days.push([d.date, d.readiness?.pain, d.readiness?.energy, d.readiness?.level, d.rest ? "yes" : "",
-      ...getPlan().nutrition.habits.map((h) => (d.nutrition?.[h.id] ? "yes" : ""))]);
+      ...getPlan().nutrition.habits.map((h) => (d.nutrition?.[h.id] ? "yes" : "")),
+      d.readiness?.feeling, d.readiness?.note, d.cycle?.flow, (d.cycle?.symptoms ?? []).join(" "), d.cycle?.note]);
   }
   const d = stamp();
   const files = [["sessions", summary], ["exercises", sets], ["days", days]]
