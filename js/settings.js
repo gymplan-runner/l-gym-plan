@@ -111,6 +111,15 @@ export async function needsBackupReminder(now = new Date()) {
   return days >= getPlan().app.backup_reminder_days ? `Your last backup was ${days} days ago.` : null;
 }
 
+// The version on this phone: the name of this app's offline copy (e.g. "lgym-v8").
+async function appVersion() {
+  try {
+    return (await caches.keys()).find((k) => k.startsWith("lgym-")) ?? "not saved for offline use yet";
+  } catch {
+    return "unknown";
+  }
+}
+
 // ------------------------------------------------------------------ view
 export function createSettingsView({ $screen, $tabs }) {
   let on = false, onDone, pending = null, usual = null;
@@ -166,6 +175,7 @@ export function createSettingsView({ $screen, $tabs }) {
         <li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open it from the new icon. It works offline after the first time.</li></ol>
         <p class="small muted">This is a web app, not an App Store app. Deleting the icon also deletes its data, so back up first.</p>
       </div>
+      <p class="muted small" id="app-version">App version: ${esc(await appVersion())}</p>
       <div class="card"><h2 style="margin-top:0">Not medical advice</h2>
         <p class="small">${esc(getPlan().meta.disclaimer)} ${esc(getPlan().safety.crashes)}</p>
       </div>
