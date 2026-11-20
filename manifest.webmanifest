@@ -1,6 +1,6 @@
 {
-  "name": "L Gym Plan",
-  "short_name": "L Gym Plan",
+  "name": "Elev8tor",
+  "short_name": "Elev8tor",
   "description": "A gentle, flexible exercise plan and logger.",
   "start_url": "./",
   "scope": "./",
