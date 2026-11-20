@@ -268,3 +268,6 @@ h1 .pill { vertical-align: middle; margin-left: 6px; }
 .step.on > span:first-child { color: var(--accent); }
 .card.owngoal.achieved { border: 2px solid var(--accent); }
 .restbar button[data-act="rest-"] { margin-left: 0; }
+
+/* Edit screen: before-session scores and the 1- and 2-day checks */
+.edit-h { font-size: 1rem; margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line, #e3e3ea); }

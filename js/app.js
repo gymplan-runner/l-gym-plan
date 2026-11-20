@@ -150,10 +150,10 @@ function checkCard({ session: s, key }) {
   const d = state.drafts[id] ?? {};
   const label = key === "h24" ? "1 day later" : "2 days later";
   const what = { gym_a: "lower-body session", gym_b: "upper-body session", swim: "swim", walk: "walk" }[s.act];
-  return `<div class="card checkcard"><b>How are you feeling after ${esc(dayName(s.date))}'s ${what}?</b>
-    <p class="muted small">${label} check. Delayed effects matter most, so this helps you learn your limits.</p>
-    <p class="q">Pain</p>${scoreChips("ck-pain", t.pain, d.pain, `data-go="ck-pain" data-ck="${id}"`)}
-    <p class="q">Energy</p>${scoreChips("ck-energy", t.energy, d.energy, `data-go="ck-energy" data-ck="${id}"`)}
+  return `<div class="card checkcard"><b>Pain and energy after ${esc(dayName(s.date))}'s ${what}</b>
+    <p class="muted small">${label} check. Delayed effects matter most, so this helps you learn your limits. You can change it later from the session in History.</p>
+    <p class="q">Pain right now (${t.pain.min} = ${esc(t.pain.low)}, ${t.pain.max} = ${esc(t.pain.high)})</p>${scoreChips("ck-pain", t.pain, d.pain, `data-go="ck-pain" data-ck="${id}"`)}
+    <p class="q">Energy right now (${t.energy.min} = ${esc(t.energy.low)}, ${t.energy.max} = ${esc(t.energy.high)})</p>${scoreChips("ck-energy", t.energy, d.energy, `data-go="ck-energy" data-ck="${id}"`)}
     <input class="in wide" data-cknote="${id}" value="${esc(d.note ?? "")}" placeholder="Anything you noticed? (optional)">
     <div class="row2"><button type="button" class="btn ghost" data-go="ck-skip" data-ck="${id}">Skip</button>
     <button type="button" class="btn" data-go="ck-save" data-ck="${id}">Save</button></div></div>`;

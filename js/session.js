@@ -1,7 +1,8 @@
 // Logging a gym session, swim or walk: exercises, sets, rest timer, autosave, resume, finish with pain and energy.
 import * as db from "./db.js";
-import { getPlan, activity, doseText, colour, picto, parseDate, isTimed, sessionItems } from "./plan.js";
-import { esc, toast, celebrate, num, mmss, fmt } from "./ui.js";
+import { getPlan, activity, doseText, colour, picto, parseDate, isTimed, sessionItems, addDays, isoDate } from "./plan.js";
+import { esc, toast, celebrate, num, mmss, fmt, today } from "./ui.js";
+import { getDay, updateDay } from "./checks.js";
 import { beep, unlockAudio } from "./beep.js";
 import { swimTarget } from "./progression.js";
 
@@ -83,7 +84,7 @@ export function scoreChips(name, scale, selected, attrs = "") {
 
 // ------------------------------------------------------------------ view
 export function createSessionView({ $screen, $tabs, onExit }) {
-  let S, last = {}, open = null, rest = null, restTimer = null, clock = null, wakeLock = null, finishing = false;
+  let S, edit = null, last = {}, open = null, rest = null, restTimer = null, clock = null, wakeLock = null, finishing = false;
 
   async function save() {
     try { await db.put("sessions", S); } catch { toast("Couldn't save. Please try again.", "bad"); }
@@ -91,6 +92,9 @@ export function createSessionView({ $screen, $tabs, onExit }) {
 
   async function start(session, { finish = false } = {}) {
     S = session;
+    // Editing a finished session: her "before" scores and the 1- and 2-day checks can be corrected too.
+    // The optional overall feeling lives on that day's readiness record.
+    edit = S.status === "finished" ? { feeling: (await getDay(S.date)).readiness?.feeling ?? null, beforeChanged: false } : null;
     last = S.kind === "gym" ? await lastTimes(S.id, S.date) : {};
     open = S.kind === "gym" ? S.items.findIndex((i) => i.status === "todo") : null;
     if (open < 0) open = null;
@@ -246,14 +250,42 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       <div class="card">${summary}
         <label class="mini">${gym ? "How long did it take? (minutes)" : `Minutes ${S.kind === "swim" ? "in the water" : "walking"}`}
           <input class="in wide" inputmode="numeric" data-field="mins" value="${mins ?? ""}" placeholder="${esc(S.target ?? "")}"></label>
-        <p class="q">Pain ${later ? "afterwards" : "now"} (${t.pain.min}–${t.pain.max})</p>${scoreChips("apain", t.pain, S.after.pain)}
-        <p class="q">Energy ${later ? "afterwards" : "now"} (${t.energy.min}–${t.energy.max})</p>${scoreChips("aenergy", t.energy, S.after.energy)}
-        ${S.before?.pain != null ? `<p class="muted small">Before: pain ${S.before.pain}, energy ${S.before.energy}.</p>` : ""}
+        <p class="q">Pain ${editing ? "straight after" : later ? "afterwards" : "now"} (${t.pain.min}–${t.pain.max})</p>${scoreChips("apain", t.pain, S.after.pain)}
+        <p class="q">Energy ${editing ? "straight after" : later ? "afterwards" : "now"} (${t.energy.min}–${t.energy.max})</p>${scoreChips("aenergy", t.energy, S.after.energy)}
+        ${editing ? editScores(t) : S.before?.pain != null ? `<p class="muted small">Before: pain ${S.before.pain}, energy ${S.before.energy}.</p>` : ""}
         <label class="mini">Notes or symptoms<textarea class="in wide" data-field="snote" rows="3" placeholder="Anything to remember?">${esc(S.note ?? "")}</textarea></label>
-        <p class="muted small">${later ? "I'll check in on how you're feeling over the next couple of days" : "I'll ask how you feel tomorrow and the day after"}, as delayed effects matter most.</p>
+        ${editing ? "" : `<p class="muted small">${later ? "I'll check in on how you're feeling over the next couple of days" : "I'll ask how you feel tomorrow and the day after"}, as delayed effects matter most.</p>`}
         <button type="button" class="btn" data-act="confirm">${editing ? "Save changes" : "Save"}</button>
       </div>
       ${editing && !gym ? `<button type="button" class="linkbtn danger-link" data-act="discard">Delete this entry</button>` : ""}`;
+  }
+
+  // On the Edit screen: the scores from before the session, and the 1- and 2-day checks, all changeable.
+  function editScores(t) {
+    const feel = { min: 1, max: 10, low: "exhausted or unwell", high: "full of energy" };
+    const before = S.before ? `<h3 class="edit-h">Before the session</h3>
+        <p class="q">Pain (${t.pain.min}–${t.pain.max})</p>${scoreChips("bpain", t.pain, S.before.pain)}
+        <p class="q">Energy (${t.energy.min}–${t.energy.max})</p>${scoreChips("benergy", t.energy, S.before.energy)}
+        <p class="q">Overall feeling (1–10, optional)</p>${scoreChips("bfeel", feel, edit.feeling)}` : "";
+    const nowIso = isoDate(today());
+    const checks = [["h24", 1, "1 day later"], ["h48", 2, "2 days later"]]
+      .filter(([key, n]) => S.checks?.[key] || isoDate(addDays(parseDate(S.date), n)) <= nowIso)
+      .map(([key, , label]) => {
+        const c = S.checks?.[key] ?? {};
+        return `<h3 class="edit-h">${label}${c.skipped ? ` <span class="muted small">(skipped)</span>` : ""}</h3>
+        <p class="q">Pain (${t.pain.min}–${t.pain.max})</p>${scoreChips(`cpain-${key}`, t.pain, c.pain ?? null)}
+        <p class="q">Energy (${t.energy.min}–${t.energy.max})</p>${scoreChips(`cenergy-${key}`, t.energy, c.energy ?? null)}`;
+      }).join("");
+    return before + checks;
+  }
+
+  function setCheck(key, field, v) {
+    const c = { ...(S.checks?.[key] ?? {}) };
+    delete c.skipped;
+    c[field] = c[field] === v ? null : v;
+    c.at ??= isoDate(today());
+    c.edited = isoDate(today());
+    S.checks = { ...S.checks, [key]: c };
   }
 
   async function onClick(e) {
@@ -296,6 +328,13 @@ export function createSessionView({ $screen, $tabs, onExit }) {
       case "unfinish": finishing = false; break;
       case "apain": S.after.pain = S.after.pain === v ? null : v; break;
       case "aenergy": S.after.energy = S.after.energy === v ? null : v; break;
+      case "bpain": S.before.pain = S.before.pain === v ? null : v; edit.beforeChanged = true; break;
+      case "benergy": S.before.energy = S.before.energy === v ? null : v; edit.beforeChanged = true; break;
+      case "bfeel": edit.feeling = edit.feeling === v ? null : v; edit.beforeChanged = true; break;
+      case "cpain-h24": setCheck("h24", "pain", v); break;
+      case "cenergy-h24": setCheck("h24", "energy", v); break;
+      case "cpain-h48": setCheck("h48", "pain", v); break;
+      case "cenergy-h48": setCheck("h48", "energy", v); break;
       case "confirm": {
         const first = S.status !== "finished";
         // Ticked sets count even if "Mark done" was forgotten.
@@ -311,6 +350,15 @@ export function createSessionView({ $screen, $tabs, onExit }) {
           if (it.kg != null) await db.setSetting(`kg:${it.exercise}`, it.kg);
         }
         await save();
+        // Keep that day's readiness record in step with corrected "before" scores (the colour she chose stays).
+        if (!first && edit?.beforeChanged && S.before) {
+          await updateDay(S.date, (d) => {
+            if (!d.readiness) return;
+            d.readiness.pain = S.before.pain;
+            d.readiness.energy = S.before.energy;
+            if (edit.feeling != null) d.readiness.feeling = edit.feeling; else delete d.readiness.feeling;
+          });
+        }
         if (!first) toast("Changes saved");
         else if (S.loggedLater) celebrate("Added", "Thanks for logging it. I'll check in on how you're feeling over the next couple of days.");
         else if (S.level === "amber" || S.level === "red") celebrate("Logged", "A lighter session is still a real session. Well listened to.");
